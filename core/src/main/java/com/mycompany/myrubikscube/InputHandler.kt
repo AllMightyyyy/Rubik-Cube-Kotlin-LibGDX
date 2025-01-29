@@ -5,15 +5,13 @@ import com.badlogic.gdx.graphics.Camera
 import com.badlogic.gdx.math.Intersector
 import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.math.collision.Ray
-import java.util.ArrayList
+import com.mycompany.myrubikscube.cube.RubiksCube
+import com.mycompany.myrubikscube.cube.Square
 
-class InputHandler(
-    private val cube: RubiksCube,
-    private val camera: Camera
-) : InputAdapter() {
+class InputHandler(private val cube: RubiksCube, private val camera: Camera) : InputAdapter() {
 
     companion object {
-        private const val tag = "rubik-touch"
+        private const val TAG = "rubik-touch"
     }
 
     private var touchStartIndex = -1
@@ -34,10 +32,8 @@ class InputHandler(
     override fun touchUp(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean {
         if (touchStartIndex < 0) return false
         val current = getObject(screenX, screenY)
-        if (current >= 0) {
-            touchDragIndex = current
-        }
-        Log.w(tag, String.format("Touch: %d, %d", touchStartIndex, touchDragIndex))
+        if (current >= 0) touchDragIndex = current
+        Log.w(TAG, "Touch: $touchStartIndex, $touchDragIndex")
         cube.tryRotate(touchStartIndex, touchDragIndex)
         touchStartIndex = -1
         touchDragIndex = -1
@@ -47,21 +43,19 @@ class InputHandler(
     override fun touchDragged(screenX: Int, screenY: Int, pointer: Int): Boolean {
         if (touchStartIndex == -1) return false
         val index = getObject(screenX, screenY)
-        if (index >= 0) {
-            touchDragIndex = index
-        }
+        if (index >= 0) touchDragIndex = index
         return true
     }
 
+    private val position = Vector3()
     private fun getObject(x: Int, y: Int): Int {
-        val position = Vector3()
         val ray: Ray = camera.getPickRay(x.toFloat(), y.toFloat())
         var result = -1
         var distance = -1f
-        val squares: ArrayList<Square> = cube.getSquares()
+        val squares = cube.getSquares()
         for (i in squares.indices) {
             val square = squares[i]
-            val inst = square.instance
+            val inst = square.modelInstance
             inst.transform.getTranslation(position)
             position.add(square.center())
             val dist2 = ray.origin.dst2(position)

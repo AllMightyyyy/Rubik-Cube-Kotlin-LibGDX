@@ -1,22 +1,24 @@
-package com.mycompany.myrubikscube
+package com.mycompany.myrubikscube.cube
 
 import com.mycompany.myrubikscube.Log
-import com.mycompany.myrubikscube.Axis
-import com.mycompany.myrubikscube.Direction
+import com.mycompany.myrubikscube.graphics.Axis
+import com.mycompany.myrubikscube.graphics.Direction
 import java.security.InvalidParameterException
 import java.util.ArrayList
+import kotlin.math.max
 
 /**
  * This class handles cube's definition. It creates all squares, faces and puts them in appropriate
- * lists for each axes. It also takes care of updating the colors of squares according to user
+ * lists for each axis. It also takes care of updating the colors of squares according to user
  * specified rotation. It doesn't care about drawing the cube. You should extend this class
  * rather than using it directly.
  */
 open class Cube(
-    private var mSizeX: Int,
-    private var mSizeY: Int,
-    private var mSizeZ: Int
+    protected var mSizeX: Int,
+    protected var mSizeY: Int,
+    protected var mSizeZ: Int
 ) {
+
     companion object {
         private const val tag = "rubik-struct"
 
@@ -30,38 +32,24 @@ open class Cube(
 
         /**
          * Default colors don't look nice on cube.
-         * Note: Colors are in RBGA (for libgdx)
+         * Note: Colors are in RBGA (for libGDX)
          */
         const val Color_RED = 0xDD2211FF.toInt()
         const val Color_GREEN = 0x22DD11FF.toInt()
         const val Color_ORANGE = 0xFF7F10FF.toInt()
         const val Color_WHITE = 0xFFFFFFFF.toInt()
         const val Color_YELLOW = 0xFFFF00FF.toInt()
-        const val Color_BLUE = 0x0000FFFF.toInt()
-        const val Color_GRAY = 0x7F7F7FFF.toInt()
+        const val Color_BLUE = 0x0000FFFF
+        const val Color_GRAY = 0x7F7F7FFF
 
-        @JvmField
-        var COLOR_TOP = Color_WHITE
+        @JvmField var COLOR_TOP = Color_WHITE
+        @JvmField var COLOR_BOTTOM = Color_YELLOW
+        @JvmField var COLOR_LEFT = Color_ORANGE
+        @JvmField var COLOR_RIGHT = Color_RED
+        @JvmField var COLOR_FRONT = Color_BLUE
+        @JvmField var COLOR_BACK = Color_GREEN
 
-        @JvmField
-        var COLOR_BOTTOM = Color_YELLOW
-
-        @JvmField
-        var COLOR_LEFT = Color_ORANGE
-
-        @JvmField
-        var COLOR_RIGHT = Color_RED
-
-        @JvmField
-        var COLOR_FRONT = Color_BLUE
-
-        @JvmField
-        var COLOR_BACK = Color_GREEN
-
-
-        private val faceNames = arrayOf(
-            "front", "right", "back", "left", "top", "bottom"
-        )
+        private val faceNames = arrayOf("front", "right", "back", "left", "top", "bottom")
 
         // We don't support skewed cubes yet.
         const val CUBE_SIDES = 4
@@ -70,22 +58,17 @@ open class Cube(
         /**
          * To calculate the square size:
          * Screen spans from -1f to +1f.
-         * OpenGl won't draw things close to the frustrum border, hence we add padding and use
+         * OpenGL won't draw things close to the frustum border, hence we add padding and use
          * 1.2f instead of 2.0f as the total size
          */
         private const val TOTAL_SIZE = 8.0f
         private const val PADDING = 0.8f
         private const val GAP = 0.1f
 
-        // Clockwise list of faces along each axes
-        @JvmField
-        val orderedFacesXaxis = intArrayOf(FACE_FRONT, FACE_TOP, FACE_BACK, FACE_BOTTOM)
-
-        @JvmField
-        val orderedFacesYaxis = intArrayOf(FACE_FRONT, FACE_LEFT, FACE_BACK, FACE_RIGHT)
-
-        @JvmField
-        val orderedFacesZaxis = intArrayOf(FACE_TOP, FACE_RIGHT, FACE_BOTTOM, FACE_LEFT)
+        // Clockwise list of faces along each axis
+        @JvmField val orderedFacesXaxis = intArrayOf(FACE_FRONT, FACE_TOP, FACE_BACK, FACE_BOTTOM)
+        @JvmField val orderedFacesYaxis = intArrayOf(FACE_FRONT, FACE_LEFT, FACE_BACK, FACE_RIGHT)
+        @JvmField val orderedFacesZaxis = intArrayOf(FACE_TOP, FACE_RIGHT, FACE_BOTTOM, FACE_LEFT)
 
         @JvmStatic
         fun face2axis(face: Int): Axis {
@@ -107,42 +90,223 @@ open class Cube(
             return when (axis) {
                 Axis.X_AXIS -> orderedFacesXaxis
                 Axis.Y_AXIS -> orderedFacesYaxis
-                else -> orderedFacesZaxis
+                Axis.Z_AXIS -> orderedFacesZaxis
             }
+        }
+
+        /**
+         * Rotate the colors in the border. This is the first part of rotating a layer.
+         */
+        private fun rotateRingColors(squareList: ArrayList<ArrayList<Square>>, dir: Direction, size: Int) {
+            val tempColors = ArrayList<Int>(size)
+            val workingCopy: ArrayList<ArrayList<Square>>
+
+            if (dir == Direction.COUNTER_CLOCKWISE) {
+                // input is in clockwise order
+                workingCopy = squareList
+            } else {
+                // reverse and rotate
+                workingCopy = ArrayList(squareList.size)
+                for (i in 0 until CUBE_SIDES) {
+                    workingCopy.add(squareList[CUBE_SIDES - 1 - i])
+                }
+            }
+
+            var src = workingCopy[0]
+            for (i in 0 until size) {
+                tempColors.add(src[i].color)
+            }
+
+            for (i in 0 until (CUBE_SIDES - 1)) {
+                val dst = workingCopy[i]
+                src = workingCopy[i + 1]
+                for (j in 0 until size) {
+                    dst[j].color = src[j].color
+                }
+            }
+
+            val dst = workingCopy[CUBE_SIDES - 1]
+            for (i in 0 until size) {
+                dst[i].color = tempColors[i]
+            }
+        }
+
+        /**
+         * Rotate colors of a given face. This is the second part of rotating a face.
+         * This function calls itself recursively to rotate inner squares.
+         *
+         * We cannot use rotateMatrix functions here as we need an in-place update of colors.
+         */
+        private fun rotateFaceColors(squares: ArrayList<Square>, direction: Direction, size: Int) {
+            val tempColors = ArrayList<Int>(size)
+            if (direction == Direction.COUNTER_CLOCKWISE) {
+                for (i in 0 until (size - 1)) {
+                    tempColors.add(squares[i].color)
+                    squares[i].color = squares[i * size + (size - 1)].color
+                }
+                for (i in 0 until (size - 1)) {
+                    squares[i * size + (size - 1)].color =
+                        squares[size * size - 1 - i].color
+                }
+                for (i in 0 until (size - 1)) {
+                    squares[size * size - 1 - i].color =
+                        squares[size * (size - 1 - i)].color
+                }
+                for (i in 0 until (size - 1)) {
+                    squares[size * (size - 1 - i)].color = tempColors[i]
+                }
+            } else {
+                for (i in 0 until (size - 1)) {
+                    tempColors.add(squares[i].color)
+                    squares[i].color = squares[size * (size - 1 - i)].color
+                }
+                for (i in 0 until (size - 1)) {
+                    squares[size * (size - 1 - i)].color =
+                        squares[size * size - 1 - i].color
+                }
+                for (i in 0 until (size - 1)) {
+                    squares[size * size - 1 - i].color =
+                        squares[i * size + (size - 1)].color
+                }
+                for (i in 0 until (size - 1)) {
+                    squares[i * size + (size - 1)].color = tempColors[i]
+                }
+            }
+
+            if (size > 3) {
+                val subset = ArrayList<Square>(size - 2)
+                for (i in 1 until size - 1) {
+                    for (j in 1 until size - 1) {
+                        subset.add(squares[i * size + j])
+                    }
+                }
+                rotateFaceColors(subset, direction, size - 2)
+            }
+        }
+
+        /**
+         * If not symmetric, rotate 180' along the given axis
+         */
+        private fun skewedRotateRingColors(squareList: ArrayList<ArrayList<Square>>) {
+            // swap 0 <-> 2, 1 <-> 3
+            val src0 = squareList[0]
+            val dst0 = squareList[2]
+            for (i in src0.indices) {
+                val color = src0[i].color
+                src0[i].color = dst0[i].color
+                dst0[i].color = color
+            }
+            val src1 = squareList[1]
+            val dst1 = squareList[3]
+            for (i in src1.indices) {
+                val color = src1[i].color
+                src1[i].color = dst1[i].color
+                dst1[i].color = color
+            }
+        }
+
+        private fun skewedRotateFaceColors(squares: ArrayList<Square>, w: Int, h: Int) {
+            // If it's a single row/column, just reverse
+            if (w == 1 || h == 1) {
+                val len = max(w, h)
+                for (i in 0 until (len / 2)) {
+                    val src = squares[i]
+                    val dst = squares[len - 1 - i]
+                    val color = src.color
+                    src.color = dst.color
+                    dst.color = color
+                }
+                return
+            }
+            // 2D 180-degree reversal logic
+            for (i in 0 until (w - 1)) {
+                val src = squares[i]
+                val dst = squares[w * h - 1 - i]
+                val color = src.color
+                src.color = dst.color
+                dst.color = color
+            }
+            for (i in 1 until h) {
+                val src = squares[i * w]
+                val dst = squares[w * (h - i) - 1]
+                val color = src.color
+                src.color = dst.color
+                dst.color = color
+            }
+            if (w + h <= 6 || w < 3 || h < 3) return
+            val subset = ArrayList<Square>()
+            for (i in 1 until (w - 1)) {
+                for (j in 1 until (h - 1)) {
+                    subset.add(squares[j * w + i])
+                }
+            }
+            skewedRotateFaceColors(subset, w - 2, h - 2)
+        }
+
+        /**
+         * Utility to rotate a matrix in 90-degree increments (used for rotateCubeX, etc.)
+         */
+        private fun <T> rotateMatrix(matrix: ArrayList<T>, w: Int, h: Int): ArrayList<T> {
+            val rotated = ArrayList<T>(matrix.size)
+            for (i in 0 until w) {
+                for (j in h downTo 1) {
+                    rotated.add(matrix[(j - 1) * w + i])
+                }
+            }
+            return rotated
+        }
+
+        private fun <T> rotateMatrixCCW(matrix: ArrayList<T>, w: Int, h: Int): ArrayList<T> {
+            val rotated = ArrayList<T>(matrix.size)
+            for (i in (w - 1) downTo 0) {
+                for (j in 0 until h) {
+                    rotated.add(matrix[j * w + i])
+                }
+            }
+            return rotated
         }
     }
 
-    /**
-     * Arrays that contain squares on each face
-     */
-    protected lateinit var mAllSquares: ArrayList<Square>
-    protected lateinit var mFrontSquares: ArrayList<Square>
-    protected lateinit var mBackSquares: ArrayList<Square>
-    protected lateinit var mTopSquares: ArrayList<Square>
-    protected lateinit var mBottomSquares: ArrayList<Square>
-    protected lateinit var mLeftSquares: ArrayList<Square>
-    protected lateinit var mRightSquares: ArrayList<Square>
-    protected lateinit var mAllFaces: Array<ArrayList<Square>>
+    private var squareSize: Float
+
+    // Collections of squares for each face
+    protected var mAllSquares = ArrayList<Square>()
+    protected var mFrontSquares = ArrayList<Square>()
+    protected var mBackSquares = ArrayList<Square>()
+    protected var mTopSquares = ArrayList<Square>()
+    protected var mBottomSquares = ArrayList<Square>()
+    protected var mLeftSquares = ArrayList<Square>()
+    protected var mRightSquares = ArrayList<Square>()
+
+    @Suppress("UNCHECKED_CAST")
+    protected var mAllFaces = arrayOfNulls<ArrayList<Square>>(FACE_COUNT)
 
     /**
      * Pieces are used to draw squares during animation. We keep separate sets of layers for each
      * axis and animate pieces from the selected layer of the appropriate set during rotation.
      */
-    protected lateinit var mAllPieces: ArrayList<Piece>
-    protected lateinit var mXaxisLayers: ArrayList<ArrayList<Piece>>
-    protected lateinit var mYaxisLayers: ArrayList<ArrayList<Piece>>
-    protected lateinit var mZaxisLayers: ArrayList<ArrayList<Piece>>
-
-    private var squareSize: Float
+    protected var mAllPieces = ArrayList<Piece>()
+    protected var mXaxisLayers = ArrayList<ArrayList<Piece>>()
+    protected var mYaxisLayers = ArrayList<ArrayList<Piece>>()
+    protected var mZaxisLayers = ArrayList<ArrayList<Piece>>()
 
     init {
         Log.w(tag, String.format("Cube Dimen: %d %d %d", mSizeX, mSizeY, mSizeZ))
         val maxSize = maxOf(mSizeX, mSizeY, mSizeZ)
         squareSize = (TOTAL_SIZE - PADDING - GAP * (maxSize + 1)) / maxSize
-        cube()
+        buildCube()
     }
 
-    private fun cube() {
+    private fun buildCube() {
+        createArrays()
+        createAllSquares()
+        createFaces()
+    }
+
+    /**
+     * We separate creation of ArrayLists from the constructor for clarity
+     */
+    private fun createArrays() {
         mAllSquares = ArrayList()
         mFrontSquares = ArrayList()
         mBackSquares = ArrayList()
@@ -150,11 +314,30 @@ open class Cube(
         mBottomSquares = ArrayList()
         mLeftSquares = ArrayList()
         mRightSquares = ArrayList()
-        mAllFaces = Array(FACE_COUNT) { ArrayList() }
-        createAllSquares()
-        createFaces()
+        @Suppress("UNCHECKED_CAST")
+        mAllFaces = arrayOfNulls<ArrayList<Square>>(FACE_COUNT)
     }
 
+    /**
+     * Decides whether a piece is CORNER, EDGE, or CENTER based on row/col
+     */
+    private fun getPieceType(row: Int, col: Int, totalRows: Int, totalCols: Int): Piece.PieceType {
+        return if (row == 0 || row == totalRows - 1) {
+            if (col == 0 || col == totalCols - 1) Piece.PieceType.CORNER else Piece.PieceType.EDGE
+        } else if (col == 0 || col == totalCols - 1) {
+            Piece.PieceType.EDGE
+        } else {
+            Piece.PieceType.CENTER
+        }
+    }
+
+    /**
+     * Create the squares and store them in their respective lists
+     *
+     * On each face array, (the respective m***Squares array), the squares are stored from the
+     * top-left to the bottom-right order assuming you're looking directly at that face.
+     * This order is used in various places and hence should not be changed.
+     */
     private fun createAllSquares() {
         createFrontSquares(COLOR_FRONT)
         createBackSquares(COLOR_BACK)
@@ -165,15 +348,12 @@ open class Cube(
     }
 
     /**
-     * From top-far to bottom-near. YZ
-     * Y moves down after filling each row on Z axis
-     *
-     * On negative X plane
+     * Creates the left face squares
      */
     private fun createLeftSquares(color: Int) {
-        val startX = getLeftFaceX()
+        val startX = leftFaceX
         val startY = (squareSize + GAP) * (mSizeY / 2.0f)
-        val startZ = 0 - (squareSize + GAP) * (mSizeZ / 2.0f)
+        val startZ = 0f - (squareSize + GAP) * (mSizeZ / 2.0f)
 
         val vertices = floatArrayOf(
             startX, startY, startZ,
@@ -181,13 +361,11 @@ open class Cube(
             startX, startY - squareSize, startZ + squareSize,
             startX, startY, startZ + squareSize
         )
-
         for (i in 0 until mSizeY) {
             vertices[1] = startY - i * (squareSize + GAP)
             vertices[4] = vertices[1] - squareSize
             vertices[7] = vertices[1] - squareSize
             vertices[10] = vertices[1]
-
             for (j in 0 until mSizeZ) {
                 vertices[2] = startZ + j * (squareSize + GAP)
                 vertices[5] = vertices[2]
@@ -201,13 +379,10 @@ open class Cube(
     }
 
     /**
-     * From top-near to bottom-far. YZ
-     * Y moves down after filling each row on Z axis
-     *
-     * On positive X plane
+     * Creates the right face squares
      */
     private fun createRightSquares(color: Int) {
-        val startX = getRightFaceX()
+        val startX = rightFaceX
         val startY = (squareSize + GAP) * (mSizeY / 2.0f)
         val startZ = (squareSize + GAP) * (mSizeZ / 2.0f)
 
@@ -217,13 +392,11 @@ open class Cube(
             startX, startY - squareSize, startZ - squareSize,
             startX, startY, startZ - squareSize
         )
-
         for (i in 0 until mSizeY) {
             vertices[1] = startY - i * (squareSize + GAP)
             vertices[4] = vertices[1] - squareSize
             vertices[7] = vertices[1] - squareSize
             vertices[10] = vertices[1]
-
             for (j in 0 until mSizeZ) {
                 vertices[2] = startZ - j * (squareSize + GAP)
                 vertices[5] = vertices[2]
@@ -237,15 +410,12 @@ open class Cube(
     }
 
     /**
-     * From far-left to near-right. ZX
-     * Z moves closer after filling each row on X axis
-     *
-     * On positive Y plane
+     * Creates the top face squares
      */
     private fun createTopSquares(color: Int) {
-        val startX = - (squareSize + GAP) * (mSizeX / 2.0f)
-        val startY = getTopFaceY()
-        val startZ = - (squareSize + GAP) * (mSizeZ / 2.0f)
+        val startX = -(squareSize + GAP) * (mSizeX / 2.0f)
+        val startY = topFaceY
+        val startZ = -(squareSize + GAP) * (mSizeZ / 2.0f)
 
         val vertices = floatArrayOf(
             startX, startY, startZ,
@@ -253,13 +423,11 @@ open class Cube(
             startX + squareSize, startY, startZ + squareSize,
             startX + squareSize, startY, startZ
         )
-
         for (i in 0 until mSizeZ) {
             vertices[2] = startZ + i * (squareSize + GAP)
             vertices[5] = vertices[2] + squareSize
             vertices[8] = vertices[2] + squareSize
             vertices[11] = vertices[2]
-
             for (j in 0 until mSizeX) {
                 vertices[0] = startX + j * (squareSize + GAP)
                 vertices[3] = vertices[0]
@@ -273,14 +441,11 @@ open class Cube(
     }
 
     /**
-     * From near-left to far-right. ZX
-     * Z moves further after filling each row on X axis
-     *
-     * On negative Y plane
+     * Creates the bottom face squares
      */
     private fun createBottomSquares(color: Int) {
         val startX = -(squareSize + GAP) * (mSizeX / 2.0f)
-        val startY = getBottomFaceY()
+        val startY = bottomFaceY
         val startZ = (squareSize + GAP) * (mSizeZ / 2.0f)
 
         val vertices = floatArrayOf(
@@ -289,13 +454,11 @@ open class Cube(
             startX + squareSize, startY, startZ - squareSize,
             startX + squareSize, startY, startZ
         )
-
         for (i in 0 until mSizeZ) {
             vertices[2] = startZ - i * (squareSize + GAP)
             vertices[5] = vertices[2] - squareSize
             vertices[8] = vertices[2] - squareSize
             vertices[11] = vertices[2]
-
             for (j in 0 until mSizeX) {
                 vertices[0] = startX + j * (squareSize + GAP)
                 vertices[3] = vertices[0]
@@ -309,15 +472,12 @@ open class Cube(
     }
 
     /**
-     * From top-left to bottom-right.
-     * Y moves down after filling each row on X axis
-     *
-     * On positive z (near plane).
+     * Creates the front face squares
      */
     private fun createFrontSquares(color: Int) {
-        val startX = 0 - (squareSize + GAP) * (mSizeX / 2.0f)
+        val startX = 0f - (squareSize + GAP) * (mSizeX / 2.0f)
         val startY = (squareSize + GAP) * (mSizeY / 2.0f)
-        val startZ = getFrontFaceZ()
+        val startZ = frontFaceZ
 
         val vertices = floatArrayOf(
             startX, startY, startZ,
@@ -325,13 +485,11 @@ open class Cube(
             startX + squareSize, startY - squareSize, startZ,
             startX + squareSize, startY, startZ
         )
-
         for (i in 0 until mSizeY) {
             vertices[1] = startY - i * (squareSize + GAP)
             vertices[4] = vertices[1] - squareSize
             vertices[7] = vertices[1] - squareSize
             vertices[10] = vertices[1]
-
             for (j in 0 until mSizeX) {
                 vertices[0] = startX + j * (squareSize + GAP)
                 vertices[3] = vertices[0]
@@ -345,15 +503,12 @@ open class Cube(
     }
 
     /**
-     * From top-right to bottom-left.
-     * Y moves down after filling each row on X axis
-     *
-     * On negative z (far plane).
+     * Creates the back face squares
      */
     private fun createBackSquares(color: Int) {
         val startX = (squareSize + GAP) * (mSizeX / 2.0f)
         val startY = (squareSize + GAP) * (mSizeY / 2.0f)
-        val startZ = getBackFaceZ()
+        val startZ = backFaceZ
 
         val vertices = floatArrayOf(
             startX, startY, startZ,
@@ -361,13 +516,11 @@ open class Cube(
             startX - squareSize, startY - squareSize, startZ,
             startX - squareSize, startY, startZ
         )
-
         for (i in 0 until mSizeY) {
             vertices[1] = startY - i * (squareSize + GAP)
             vertices[4] = vertices[1] - squareSize
             vertices[7] = vertices[1] - squareSize
             vertices[10] = vertices[1]
-
             for (j in 0 until mSizeX) {
                 vertices[0] = startX - j * (squareSize + GAP)
                 vertices[3] = vertices[0]
@@ -381,17 +534,14 @@ open class Cube(
     }
 
     /**
-     * Create a new piece or return an existing piece that contains one of the squares.
-     * A square can only be part of one piece. This ensures that there are no duplicate or partial pieces.
+     * Create a new piece or return an existing piece that contains one of the squares. A square
+     * can only be part of one piece. This ensures that there are no duplicate or partial pieces.
      */
-    private fun createPieceWithSquares(
-        squares: ArrayList<Square>,
-        type: Piece.PieceType
-    ): Piece {
+    private fun createPieceWithSquares(squares: ArrayList<Square>, type: Piece.PieceType): Piece {
         var piece: Piece? = null
         for (p in mAllPieces) {
             for (sq in squares) {
-                if (p.mSquares.contains(sq)) {
+                if (sq in p.mSquares) {
                     piece = p
                     break
                 }
@@ -413,6 +563,9 @@ open class Cube(
      * corresponding to each dimension (m*axisFaceList). A piece can have anywhere from
      * one to six squares (in a 1x1x1 cube).
      *
+     * To avoid creating duplicate pieces, we store all pieces in a separate list and search it
+     * for any existing pieces with the given square before creating a new one.
+     *
      * The order of pieces is used in solutions and should not be changed. The outer layers follow
      * the same order as the corresponding face.
      */
@@ -423,40 +576,30 @@ open class Cube(
         mAllFaces[FACE_LEFT] = mLeftSquares
         mAllFaces[FACE_TOP] = mTopSquares
         mAllFaces[FACE_BOTTOM] = mBottomSquares
-        mAllPieces = ArrayList()
-        mXaxisLayers = ArrayList(mSizeX)
-        mYaxisLayers = ArrayList(mSizeY)
-        mZaxisLayers = ArrayList(mSizeZ)
 
-        val frontFacePieces = ArrayList<Piece>()
-        val rightFacePieces = ArrayList<Piece>()
-        val leftFacePieces = ArrayList<Piece>()
-        val topFacePieces = ArrayList<Piece>()
-        val bottomFacePieces = ArrayList<Piece>()
-        val backFacePieces = ArrayList<Piece>()
+        mAllPieces.clear()
+        mXaxisLayers.clear()
+        mYaxisLayers.clear()
+        mZaxisLayers.clear()
+
+        val frontFace = ArrayList<Piece>()
+        val rightFace = ArrayList<Piece>()
+        val leftFace = ArrayList<Piece>()
+        val topFace = ArrayList<Piece>()
+        val bottomFace = ArrayList<Piece>()
+        val backFace = ArrayList<Piece>()
         val squares = ArrayList<Square>()
 
-        /**
-         * Helper function to determine piece type
-         */
-        fun getPieceType(row: Int, col: Int, totalRows: Int, totalCols: Int): Piece.PieceType {
-            return if (row == 0 || row == totalRows - 1) {
-                if (col == 0 || col == totalCols - 1) Piece.PieceType.CORNER else Piece.PieceType.EDGE
-            } else if (col == 0 || col == totalCols - 1) {
-                Piece.PieceType.EDGE
-            } else {
-                Piece.PieceType.CENTER
-            }
-        }
+        var type: Piece.PieceType
 
-        // Build front face pieces
+        // Front
         for (i in 0 until mSizeY) {
             for (j in 0 until mSizeX) {
                 squares.clear()
-                val type = getPieceType(i, j, mSizeY, mSizeX)
+                type = getPieceType(i, j, mSizeY, mSizeX)
                 squares.add(mFrontSquares[i * mSizeX + j])
                 if (i == 0) {
-                    squares.add(mTopSquares[mSizeX * (mSizeZ - 1) + j])
+                    squares.add(mTopSquares[(mSizeZ - 1) * mSizeX + j])
                 }
                 if (i == mSizeY - 1) {
                     squares.add(mBottomSquares[j])
@@ -467,15 +610,15 @@ open class Cube(
                 if (j == mSizeX - 1) {
                     squares.add(mRightSquares[mSizeZ * i])
                 }
-                frontFacePieces.add(createPieceWithSquares(squares, type))
+                frontFace.add(createPieceWithSquares(squares, type))
             }
         }
 
-        // Build right face pieces
+        // Right
         for (i in 0 until mSizeY) {
             for (j in 0 until mSizeZ) {
                 squares.clear()
-                val type = getPieceType(i, j, mSizeY, mSizeZ)
+                type = getPieceType(i, j, mSizeY, mSizeZ)
                 if (j == 0) {
                     squares.add(mFrontSquares[(i + 1) * mSizeX - 1])
                 }
@@ -489,18 +632,18 @@ open class Cube(
                 if (j == mSizeZ - 1) {
                     squares.add(mBackSquares[i * mSizeX])
                 }
-                rightFacePieces.add(createPieceWithSquares(squares, type))
+                rightFace.add(createPieceWithSquares(squares, type))
             }
         }
 
-        // Build left face pieces
+        // Left
         for (i in 0 until mSizeY) {
             for (j in 0 until mSizeZ) {
                 squares.clear()
                 if (j == mSizeZ - 1) {
                     squares.add(mFrontSquares[i * mSizeX])
                 }
-                val type = getPieceType(i, j, mSizeY, mSizeZ)
+                type = getPieceType(i, j, mSizeY, mSizeZ)
                 squares.add(mLeftSquares[i * mSizeZ + j])
                 if (i == 0) {
                     squares.add(mTopSquares[j * mSizeX])
@@ -514,11 +657,11 @@ open class Cube(
                 if (mSizeX == 1) {
                     squares.add(mRightSquares[(i + 1) * mSizeZ - 1 - j])
                 }
-                leftFacePieces.add(createPieceWithSquares(squares, type))
+                leftFace.add(createPieceWithSquares(squares, type))
             }
         }
 
-        // Build top face pieces
+        // Top
         for (i in 0 until mSizeZ) {
             for (j in 0 until mSizeX) {
                 squares.clear()
@@ -531,16 +674,16 @@ open class Cube(
                 if (i == mSizeZ - 1) {
                     squares.add(mFrontSquares[j])
                 }
-                val type = getPieceType(i, j, mSizeZ, mSizeX)
+                type = getPieceType(i, j, mSizeZ, mSizeX)
                 squares.add(mTopSquares[i * mSizeX + j])
                 if (i == 0) {
                     squares.add(mBackSquares[mSizeX - 1 - j])
                 }
-                topFacePieces.add(createPieceWithSquares(squares, type))
+                topFace.add(createPieceWithSquares(squares, type))
             }
         }
 
-        // Build bottom face pieces
+        // Bottom
         for (i in 0 until mSizeZ) {
             for (j in 0 until mSizeX) {
                 squares.clear()
@@ -553,23 +696,19 @@ open class Cube(
                 if (j == mSizeX - 1) {
                     squares.add(mRightSquares[mSizeZ * (mSizeY - 1) + i])
                 }
-                val type = getPieceType(i, j, mSizeZ, mSizeX)
+                type = getPieceType(i, j, mSizeZ, mSizeX)
                 squares.add(mBottomSquares[i * mSizeX + j])
                 if (i == mSizeZ - 1) {
-                    squares.add(
-                        mBackSquares[mSizeX * (mSizeY - 1) + mSizeX - 1 - j]
-                    )
+                    squares.add(mBackSquares[mSizeX * (mSizeY - 1) + mSizeX - 1 - j])
                 }
                 if (mSizeY == 1) {
-                    squares.add(
-                        mTopSquares[(mSizeZ - 1 - i) * mSizeX + j]
-                    )
+                    squares.add(mTopSquares[(mSizeZ - 1 - i) * mSizeX + j])
                 }
-                bottomFacePieces.add(createPieceWithSquares(squares, type))
+                bottomFace.add(createPieceWithSquares(squares, type))
             }
         }
 
-        // Build back face pieces
+        // Back
         for (i in 0 until mSizeY) {
             for (j in 0 until mSizeX) {
                 squares.clear()
@@ -585,196 +724,95 @@ open class Cube(
                 if (j == mSizeX - 1) {
                     squares.add(mLeftSquares[i * mSizeZ])
                 }
-                val type = getPieceType(i, j, mSizeY, mSizeX)
+                type = getPieceType(i, j, mSizeY, mSizeX)
                 squares.add(mBackSquares[i * mSizeX + j])
                 if (mSizeZ == 1) {
                     squares.add(mFrontSquares[(i + 1) * mSizeX - 1 - j])
                 }
-                backFacePieces.add(createPieceWithSquares(squares, type))
+                backFace.add(createPieceWithSquares(squares, type))
             }
         }
 
-        // Build X-axis layers
-        mXaxisLayers.add(leftFacePieces)
-        for (i in 1 until mSizeX - 1) {
+        // X-axis layers
+        mXaxisLayers.add(leftFace)
+        for (i in 1 until (mSizeX - 1)) {
             val pieces = ArrayList<Piece>()
-            for (j in 0 until mSizeZ - 1) {
-                pieces.add(topFacePieces[j * mSizeX + i])
+            for (j in 0 until (mSizeZ - 1)) {
+                pieces.add(topFace[j * mSizeX + i])
             }
-            for (j in 0 until mSizeY - 1) {
-                pieces.add(frontFacePieces[j * mSizeX + i])
+            for (j in 0 until (mSizeY - 1)) {
+                pieces.add(frontFace[j * mSizeX + i])
             }
-            for (j in 0 until mSizeZ - 1) {
-                pieces.add(bottomFacePieces[j * mSizeX + i])
+            for (j in 0 until (mSizeZ - 1)) {
+                pieces.add(bottomFace[j * mSizeX + i])
             }
-            for (j in 0 until mSizeY - 1) {
-                pieces.add(backFacePieces[(mSizeX * (mSizeY - 1 - j)) + (mSizeX - 1 - i)])
+            for (j in 0 until (mSizeY - 1)) {
+                pieces.add(backFace[(mSizeX * (mSizeY - 1 - j)) + (mSizeX - 1 - i)])
             }
             mXaxisLayers.add(pieces)
         }
-        mXaxisLayers.add(rightFacePieces)
+        mXaxisLayers.add(rightFace)
 
-        // Build Y-axis layers
-        mYaxisLayers.add(bottomFacePieces)
-        for (i in 1 until mSizeY - 1) {
+        // Y-axis layers
+        mYaxisLayers.add(bottomFace)
+        for (i in 1 until (mSizeY - 1)) {
             val pieces = ArrayList<Piece>()
-            for (j in 0 until mSizeX - 1) {
-                pieces.add(frontFacePieces[(mSizeY - 1 - i) * mSizeX + j])
+            for (j in 0 until (mSizeX - 1)) {
+                pieces.add(frontFace[(mSizeY - 1 - i) * mSizeX + j])
             }
-            for (j in 0 until mSizeZ - 1) {
-                pieces.add(rightFacePieces[(mSizeY - 1 - i) * mSizeZ + j])
+            for (j in 0 until (mSizeZ - 1)) {
+                pieces.add(rightFace[(mSizeY - 1 - i) * mSizeZ + j])
             }
-            for (j in 0 until mSizeX - 1) {
-                pieces.add(backFacePieces[(mSizeY - 1 - i) * mSizeX + j])
+            for (j in 0 until (mSizeX - 1)) {
+                pieces.add(backFace[(mSizeY - 1 - i) * mSizeX + j])
             }
-            for (j in 0 until mSizeZ - 1) {
-                pieces.add(leftFacePieces[(mSizeY - 1 - i) * mSizeZ + j])
+            for (j in 0 until (mSizeZ - 1)) {
+                pieces.add(leftFace[(mSizeY - 1 - i) * mSizeZ + j])
             }
             mYaxisLayers.add(pieces)
         }
-        mYaxisLayers.add(topFacePieces)
+        mYaxisLayers.add(topFace)
 
-        // Build Z-axis layers
-        mZaxisLayers.add(backFacePieces)
-        for (i in 1 until mSizeZ - 1) {
+        // Z-axis layers
+        mZaxisLayers.add(backFace)
+        for (i in 1 until (mSizeZ - 1)) {
             val pieces = ArrayList<Piece>()
-            for (j in 0 until mSizeX - 1) {
-                pieces.add(topFacePieces[i * mSizeX + j])
+            for (j in 0 until (mSizeX - 1)) {
+                pieces.add(topFace[i * mSizeX + j])
             }
-            for (j in 0 until mSizeY - 1) {
-                pieces.add(rightFacePieces[mSizeZ * j + mSizeZ - 1 - i])
+            for (j in 0 until (mSizeY - 1)) {
+                pieces.add(rightFace[mSizeZ * j + (mSizeZ - 1 - i)])
             }
-            for (j in 0 until mSizeX - 1) {
-                pieces.add(bottomFacePieces[(mSizeZ - 1 - i) * mSizeX + (mSizeX - 1 - j)])
+            for (j in 0 until (mSizeX - 1)) {
+                pieces.add(bottomFace[(mSizeZ - 1 - i) * mSizeX + (mSizeX - 1 - j)])
             }
-            for (j in 0 until mSizeY - 1) {
-                pieces.add(leftFacePieces[(mSizeY - 1 - j) * mSizeZ + i])
+            for (j in 0 until (mSizeY - 1)) {
+                pieces.add(leftFace[(mSizeY - 1 - j) * mSizeZ + i])
             }
             mZaxisLayers.add(pieces)
         }
-        mZaxisLayers.add(frontFacePieces)
-        Log.w(tag, "total pieces: " + mAllPieces.size)
+        mZaxisLayers.add(frontFace)
+
+        Log.w(tag, "total pieces: ${mAllPieces.size}")
     }
 
-    /**
-     * Rotate the colors in the border. This is the first part of rotating a layer.
-     */
-    private fun rotateRingColors(
-        squareList: ArrayList<ArrayList<Square>>,
-        dir: Direction,
-        size: Int
-    ) {
-        val workingCopy: ArrayList<ArrayList<Square>>
-        val tempColors = ArrayList<Int>(size)
-        val dst: ArrayList<Square>
-        val src: ArrayList<Square>
+    val frontFaceZ: Float
+        get() = (squareSize + GAP) * (mSizeZ / 2.0f)
 
-        if (dir == Direction.COUNTER_CLOCKWISE) {
-            // input is in clockwise order
-            workingCopy = squareList
-        } else {
-            // reverse and rotate
-            workingCopy = ArrayList(squareList.size)
-            for (i in 0 until CUBE_SIDES) {
-                workingCopy.add(squareList[CUBE_SIDES - 1 - i])
-            }
-        }
+    val backFaceZ: Float
+        get() = -(squareSize + GAP) * (mSizeZ / 2.0f)
 
-        src = workingCopy[0]
-        for (i in 0 until size) {
-            tempColors.add(src[i].color)
-        }
+    val leftFaceX: Float
+        get() = -(squareSize + GAP) * (mSizeX / 2.0f)
 
-        for (i in 0 until CUBE_SIDES - 1) {
-            var dst = workingCopy[i]
-            var src = workingCopy[i + 1]
-            for (j in 0 until size) {
-                dst[j].color = src[j].color
-            }
-        }
+    val rightFaceX: Float
+        get() = (squareSize + GAP) * (mSizeX / 2.0f)
 
-        dst = workingCopy[CUBE_SIDES - 1]
-        for (i in 0 until size) {
-            dst[i].color = tempColors[i]
-        }
-    }
+    val topFaceY: Float
+        get() = (squareSize + GAP) * (mSizeY / 2.0f)
 
-    /**
-     * Rotate colors of a given face. This is the second part of rotating a face.
-     * This function calls itself recursively to rotate inner squares.
-     *
-     * We cannot use rotateMatrix functions here as we need an in-place update of colors.
-     */
-    private fun rotateFaceColors(squares: ArrayList<Square>, direction: Direction, size: Int) {
-        val tempColors = ArrayList<Int>(size)
-        if (direction == Direction.COUNTER_CLOCKWISE) {
-            for (i in 0 until size - 1) {
-                tempColors.add(squares[i].color)
-                squares[i].color = squares[i * size + size - 1].color
-            }
-            for (i in 0 until size - 1) {
-                squares[i * size + size - 1].color =
-                    squares[size * size - 1 - i].color
-            }
-            for (i in 0 until size - 1) {
-                squares[size * size - 1 - i].color =
-                    squares[size * (size - 1 - i)].color
-            }
-            for (i in 0 until size - 1) {
-                squares[size * (size - 1 - i)].color = tempColors[i]
-            }
-        } else {
-            for (i in 0 until size - 1) {
-                tempColors.add(squares[i].color)
-                squares[i].color = squares[size * (size - 1 - i)].color
-            }
-            for (i in 0 until size - 1) {
-                squares[size * (size - 1 - i)].color =
-                    squares[size * size - 1 - i].color
-            }
-            for (i in 0 until size - 1) {
-                squares[size * size - 1 - i].color =
-                    squares[i * size + size - 1].color
-            }
-            for (i in 0 until size - 1) {
-                squares[i * size + size - 1].color = tempColors[i]
-            }
-        }
-
-        if (size > 3) {
-            val subset = ArrayList<Square>(size - 2)
-            for (i in 1 until size - 1) {
-                for (j in 1 until size - 1) {
-                    subset.add(squares[i * size + j])
-                }
-            }
-            rotateFaceColors(subset, direction, size - 2)
-        }
-    }
-
-    fun getFrontFaceZ(): Float {
-        return (squareSize + GAP) * (mSizeZ / 2.0f)
-    }
-
-    fun getBackFaceZ(): Float {
-        return - (squareSize + GAP) * (mSizeZ / 2.0f)
-    }
-
-    fun getLeftFaceX(): Float {
-        return - (squareSize + GAP) * (mSizeX / 2.0f)
-    }
-
-    fun getRightFaceX(): Float {
-        return (squareSize + GAP) * (mSizeX / 2.0f)
-    }
-
-    fun getTopFaceY(): Float {
-        return (squareSize + GAP) * (mSizeY / 2.0f)
-    }
-
-    fun getBottomFaceY(): Float {
-        return - (squareSize + GAP) * (mSizeY / 2.0f)
-    }
+    val bottomFaceY: Float
+        get() = -(squareSize + GAP) * (mSizeY / 2.0f)
 
     protected fun getAxisSize(axis: Axis): Int {
         return when (axis) {
@@ -785,28 +823,28 @@ open class Cube(
     }
 
     /**
-     * Rotate the face specified by @face and @axis.
+     * Rotate the face specified by [face] and [axis].
      *
-     * Note that the direction is relative to positive direction of the mentioned axis, and not
+     * Note that the direction is relative to the positive direction of the mentioned axis, and not
      * the visible side of face. This is against the normal cube notation where direction is
      * usually mentioned relative to the face being rotated.
      *
-     * For instance, in traditional cube notation, L stands for left face clockwise where the
-     * clock is running on the visible face of the left face. It will rotate left face clockwise
-     * around the negative x axis. In our case, left face is face-0 on X axis and to achieve "L",
-     * we should call this function with values (X, CCW, 0)
+     * For instance, in traditional cube notation, L stands for "Left face clockwise" where the
+     * clock is running on the visible face of the left face. It will rotate the left face clockwise
+     * around the negative x-axis. In our case, left face is face-0 on the X-axis and to achieve "L",
+     * we should call this function with values (X, CCW, 0).
      *
      * Example mappings from traditional notation to this function (assuming 3x3x3 cube):
-     * Front face clockwise: (Z, CW, 2)
-     * Left face clockwise: (X, CCW, 0)
-     * Bottom face clockwise: (Y, CCW, 0)
+     * - Front face clockwise: (Z, CW, 2)
+     * - Left face clockwise: (X, CCW, 0)
+     * - Bottom face clockwise: (Y, CCW, 0)
      */
-    protected fun rotate(axis: Axis, direction: Direction, face: Int) {
+    protected open fun rotate(axis: Axis, direction: Direction, face: Int) {
         val maxSize = getAxisSize(axis)
         if (face >= maxSize) {
             throw AssertionError(
                 String.format(
-                    "face mismsatch %d %d %d: axis %s, face %d",
+                    "face mismatch %d %d %d: axis %s, face %d",
                     mSizeX, mSizeY, mSizeZ, axis.toString(), face
                 )
             )
@@ -814,16 +852,12 @@ open class Cube(
 
         var w = 0
         var h = 0
-
-        // The face to be rotated (in case we are rotating an edge layer).
         var faceSquares: ArrayList<Square>? = null
-
-        // Additional face to be rotated if the dimension along the axis of rotation is 1
         var oppositeFace: ArrayList<Square>? = null
 
         // This list holds the squares from the sides of the layer being rotated
         val squareList = ArrayList<ArrayList<Square>>(CUBE_SIDES)
-        for (i in 0 until CUBE_SIDES) {
+        repeat(CUBE_SIDES) {
             squareList.add(ArrayList())
         }
 
@@ -839,7 +873,6 @@ open class Cube(
                     squareList[1].add(mTopSquares[mSizeX * i + face])
                     squareList[3].add(mBottomSquares[mSizeX * i + face])
                 }
-
                 if (face == 0) {
                     faceSquares = mLeftSquares
                 } else if (face == mSizeX - 1) {
@@ -851,6 +884,7 @@ open class Cube(
                 w = mSizeZ
                 h = mSizeY
             }
+
             Axis.Y_AXIS -> {
                 for (i in 0 until mSizeX) {
                     squareList[0].add(
@@ -868,7 +902,6 @@ open class Cube(
                         mRightSquares[(mSizeY - 1 - face) * mSizeZ + i]
                     )
                 }
-
                 if (face == 0) {
                     faceSquares = mBottomSquares
                 } else if (face == mSizeY - 1) {
@@ -880,22 +913,24 @@ open class Cube(
                 w = mSizeX
                 h = mSizeZ
             }
+
             Axis.Z_AXIS -> {
                 for (i in 0 until mSizeX) {
                     squareList[0].add(mTopSquares[mSizeX * face + i])
                     squareList[2].add(
-                        mBottomSquares[mSizeX * (mSizeZ - 1 - face) + (mSizeX - 1 - i)]
+                        mBottomSquares[
+                            mSizeX * (mSizeZ - 1 - face) + (mSizeX - 1 - i)
+                        ]
                     )
                 }
                 for (i in 0 until mSizeY) {
                     squareList[1].add(
-                        mRightSquares[mSizeZ * i + mSizeZ - 1 - face]
+                        mRightSquares[mSizeZ * i + (mSizeZ - 1 - face)]
                     )
                     squareList[3].add(
                         mLeftSquares[mSizeZ * (mSizeY - 1 - i) + face]
                     )
                 }
-
                 if (face == 0) {
                     faceSquares = mBackSquares
                 } else if (face == mSizeZ - 1) {
@@ -910,9 +945,28 @@ open class Cube(
         }
 
         val symmetric = isSymmetricAroundAxis(axis)
-        if (!symmetric && mSizeX != mSizeY && mSizeY != mSizeZ && mSizeX != mSizeZ) {
-            // For a skewed dimension that isn't fully symmetrical
-            // rotate 180' along the given axis
+        if (symmetric) {
+            val size = if (axis == Axis.X_AXIS) mSizeY else mSizeX
+            rotateRingColors(squareList, direction, size)
+
+            // If the rotating face is on the edge, rotate that face's squares
+            if (faceSquares != null) {
+                if (face == 0) {
+                    // Lower layers store colors in opposite direction, so invert direction
+                    val inverseDirection = if (direction == Direction.CLOCKWISE)
+                        Direction.COUNTER_CLOCKWISE else Direction.CLOCKWISE
+                    rotateFaceColors(faceSquares, inverseDirection, size)
+                } else {
+                    // It's the positive edge of the axis (front/top/right), rotate as is
+                    rotateFaceColors(faceSquares, direction, size)
+                }
+            }
+            // If dimension is 1, the opposite face also needs rotating
+            if (oppositeFace != null) {
+                rotateFaceColors(oppositeFace, direction, size)
+            }
+        } else {
+            // If not symmetric, effectively rotate 180'
             skewedRotateRingColors(squareList)
             if (faceSquares != null) {
                 skewedRotateFaceColors(faceSquares, w, h)
@@ -920,114 +974,16 @@ open class Cube(
             if (oppositeFace != null) {
                 skewedRotateFaceColors(oppositeFace, w, h)
             }
-        } else {
-            val size = if (axis == Axis.X_AXIS) mSizeY else if (axis == Axis.Z_AXIS) mSizeY else mSizeX
-            rotateRingColors(squareList, direction, size)
-            if (faceSquares != null) {
-                if (face == 0) {
-                    // Lower layers store colors in opposite direction
-                    rotateFaceColors(
-                        faceSquares,
-                        if (direction == Direction.CLOCKWISE) Direction.COUNTER_CLOCKWISE else Direction.CLOCKWISE,
-                        size
-                    )
-                } else {
-                    // squares are stored in clockwise order
-                    rotateFaceColors(faceSquares, direction, size)
-                }
-            }
-            if (oppositeFace != null) {
-                rotateFaceColors(oppositeFace, direction, size)
-            }
-        }
-    }
-
-    private fun skewedRotateFaceColors(squares: ArrayList<Square>, w: Int, h: Int) {
-        // If its a single row/column, just reverse
-        if (w == 1 || h == 1) {
-            val len = maxOf(w, h)
-            for (i in 0 until len / 2) {
-                val src = squares[i]
-                val dst = squares[len - 1 - i]
-                val color = src.color
-                src.color = dst.color
-                dst.color = color
-            }
-            return
-        }
-        for (i in 0 until w - 1) {
-            val src = squares[i]
-            val dst = squares[w * h - 1 - i]
-            val color = src.color
-            src.color = dst.color
-            dst.color = color
-        }
-        for (i in 1 until h) {
-            val src = squares[i * w]
-            val dst = squares[w * (h - i) - 1]
-            val color = src.color
-            src.color = dst.color
-            dst.color = color
-        }
-        if (w + h <= 6 || w < 3 || h < 3) return
-        val subset = ArrayList<Square>()
-        for (i in 1 until w - 1) {
-            for (j in 1 until h - 1) {
-                subset.add(squares[j * w + i])
-            }
-        }
-        skewedRotateFaceColors(subset, w - 2, h - 2)
-    }
-
-    private fun skewedRotateRingColors(squareList: ArrayList<ArrayList<Square>>) {
-        val src0 = squareList[0]
-        val src1 = squareList[1]
-        val src2 = squareList[2]
-        val src3 = squareList[3]
-
-        for (i in src0.indices) {
-            val color = src0[i].color
-            src0[i].color = src2[i].color
-            src2[i].color = color
-        }
-        for (i in src1.indices) {
-            val color = src1[i].color
-            src1[i].color = src3[i].color
-            src3[i].color = color
-        }
-    }
-
-    fun getSizeX(): Int {
-        return mSizeX
-    }
-
-    fun getSizeY(): Int {
-        return mSizeY
-    }
-
-    fun getSizeZ(): Int {
-        return mSizeZ
-    }
-
-    fun getSquareSize(): Float {
-        return squareSize
-    }
-
-    protected fun isSymmetricAroundAxis(axis: Axis): Boolean {
-        return when (axis) {
-            Axis.X_AXIS -> mSizeY == mSizeZ
-            Axis.Y_AXIS -> mSizeX == mSizeZ
-            Axis.Z_AXIS -> mSizeX == mSizeY
         }
     }
 
     /**
-     * Rotate the whole cube along the given axis.
-     * Can be used for 90' rotations in skewed cubes
+     * Rotate the whole cube along the given [axis].
+     * Can be used for 90-degree rotations in skewed cubes.
      *
-     * This function basically reorganizes the cube
+     * This function basically reorganizes the internal structure of the cube arrays.
      */
-    protected fun rotate(axis: Axis, direction: Direction) {
+    protected open fun rotate(axis: Axis, direction: Direction) {
         var x = 0
         var y = 0
         var z = 0
@@ -1035,11 +991,11 @@ open class Cube(
         var angle = -90
         if (direction == Direction.COUNTER_CLOCKWISE) {
             angle = 90
-            // rotate thrice for CCW
+            // Instead of a direct single CCW rotation, rotate thrice clockwise.
             count = 3
         }
 
-        for (i in 0 until count) {
+        repeat(count) {
             when (axis) {
                 Axis.X_AXIS -> {
                     x = 1
@@ -1055,59 +1011,36 @@ open class Cube(
                 }
             }
         }
+
+        // Recreate the faces after re-laying out squares
         createFaces()
         updateSquareFaces()
 
+        // Adjust the squares' transforms
         for (sq in mAllSquares) {
             sq.rotateCoordinates(x.toFloat(), y.toFloat(), z.toFloat(), angle)
         }
     }
 
-    private fun rotateMatrix(
-        matrix: ArrayList<Square>,
-        w: Int,
-        h: Int
-    ): ArrayList<Square> {
-        val rotatedMatrix = ArrayList<Square>(matrix.size)
-        for (i in 0 until w) {
-            for (j in h downTo 1) {
-                rotatedMatrix.add(matrix[(j - 1) * w + i])
-            }
-        }
-        return rotatedMatrix
-    }
-
-    private fun rotateMatrixCCW(
-        matrix: ArrayList<Square>,
-        w: Int,
-        h: Int
-    ): ArrayList<Square> {
-        val rotatedMatrix = ArrayList<Square>(matrix.size)
-        for (i in w - 1 downTo 0) {
-            for (j in 0 until h) {
-                rotatedMatrix.add(matrix[j * w + i])
-            }
-        }
-        return rotatedMatrix
-    }
-
     protected fun rotateCubeX() {
+        // Copy the top face
         val tempFace = ArrayList(mTopSquares)
         mTopSquares = mFrontSquares
         mFrontSquares = mBottomSquares
         mBottomSquares = ArrayList()
-        for (i in mSizeY - 1 downTo 0) {
-            for (j in mSizeX - 1 downTo 0) {
+        for (i in (mSizeY - 1) downTo 0) {
+            for (j in (mSizeX - 1) downTo 0) {
                 mBottomSquares.add(mBackSquares[i * mSizeX + j])
             }
         }
         mBackSquares.clear()
-        for (i in mSizeZ - 1 downTo 0) {
-            for (j in mSizeX - 1 downTo 0) {
+        for (i in (mSizeZ - 1) downTo 0) {
+            for (j in (mSizeX - 1) downTo 0) {
                 mBackSquares.add(tempFace[i * mSizeX + j])
             }
         }
 
+        // rotateMatrix / rotateMatrixCCW
         mRightSquares = rotateMatrix(mRightSquares, mSizeZ, mSizeY)
         mLeftSquares = rotateMatrixCCW(mLeftSquares, mSizeZ, mSizeY)
 
@@ -1122,6 +1055,7 @@ open class Cube(
         mRightSquares = mBackSquares
         mBackSquares = mLeftSquares
         mLeftSquares = tempFace
+
         mTopSquares = rotateMatrix(mTopSquares, mSizeX, mSizeZ)
         mBottomSquares = rotateMatrixCCW(mBottomSquares, mSizeX, mSizeZ)
 
@@ -1136,6 +1070,7 @@ open class Cube(
         mLeftSquares = rotateMatrix(mBottomSquares, mSizeX, mSizeZ)
         mBottomSquares = rotateMatrix(mRightSquares, mSizeZ, mSizeY)
         mRightSquares = rotateMatrix(tempFace, mSizeX, mSizeZ)
+
         mFrontSquares = rotateMatrix(mFrontSquares, mSizeX, mSizeY)
         mBackSquares = rotateMatrixCCW(mBackSquares, mSizeX, mSizeY)
 
@@ -1146,10 +1081,27 @@ open class Cube(
 
     private fun updateSquareFaces() {
         for (i in 0 until FACE_COUNT) {
-            val face = mAllFaces[i]
+            val face = mAllFaces[i] ?: continue
             for (sq in face) {
                 sq.face = i
             }
+        }
+    }
+
+    val sizeX: Int
+        get() = mSizeX
+    val sizeY: Int
+        get() = mSizeY
+    val sizeZ: Int
+        get() = mSizeZ
+    val squareSizeValue: Float
+        get() = squareSize
+
+    protected fun isSymmetricAroundAxis(axis: Axis): Boolean {
+        return when (axis) {
+            Axis.X_AXIS -> (mSizeY == mSizeZ)
+            Axis.Y_AXIS -> (mSizeX == mSizeZ)
+            Axis.Z_AXIS -> (mSizeX == mSizeY)
         }
     }
 }
