@@ -105,6 +105,7 @@ class RubiksCube3x3x3 : RubiksCube(SIZE) {
 
         // 3) Parse min2phase result into an Algorithm
         val algo = parseMin2PhaseSolution(result)
+        Log.d(tag, algo.toString())
 
         // 4) Mark our state as solving, so setAlgo(...) is valid
         mState = CubeState.SOLVING
@@ -164,7 +165,7 @@ class RubiksCube3x3x3 : RubiksCube(SIZE) {
         appendFaceString(mLeftSquares, sb, 'L')
         // (6) B face (mBackSquares)
         appendFaceString(mBackSquares, sb, 'B')
-
+        com.mycompany.myrubikscube.Log.w(tag, sb.toString())
         return sb.toString()
     }
 

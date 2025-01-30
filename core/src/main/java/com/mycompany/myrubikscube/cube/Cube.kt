@@ -271,12 +271,12 @@ open class Cube(
 
     // Collections of squares for each face
     protected var mAllSquares = ArrayList<Square>()
-    protected var mFrontSquares = ArrayList<Square>()
-    protected var mBackSquares = ArrayList<Square>()
-    protected var mTopSquares = ArrayList<Square>()
-    protected var mBottomSquares = ArrayList<Square>()
-    protected var mLeftSquares = ArrayList<Square>()
-    protected var mRightSquares = ArrayList<Square>()
+    var mFrontSquares = ArrayList<Square>()
+    var mBackSquares = ArrayList<Square>()
+    var mTopSquares = ArrayList<Square>()
+    var mBottomSquares = ArrayList<Square>()
+    var mLeftSquares = ArrayList<Square>()
+    var mRightSquares = ArrayList<Square>()
 
     @Suppress("UNCHECKED_CAST")
     protected var mAllFaces = arrayOfNulls<ArrayList<Square>>(FACE_COUNT)

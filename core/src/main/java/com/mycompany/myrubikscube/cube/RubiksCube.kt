@@ -257,6 +257,9 @@ open class RubiksCube : Cube {
      * Called each frame to process partial rotations, etc.
      */
     fun onNextFrame() {
+        if (mRotation == null) {
+            return
+        }
         if (rotateMode == RotateMode.NONE || mRotation?.status == false) {
             return
         }
@@ -376,8 +379,7 @@ open class RubiksCube : Cube {
      * otherwise draw the rotating layers with partial angles.
      */
     fun draw() {
-        if (rotateMode == RotateMode.NONE || mRotation?.status == false) {
-            // Just draw the entire cube plainly
+        if (mRotation == null || rotateMode == RotateMode.NONE || mRotation?.status == false) {
             drawCube()
             return
         }
