@@ -1,9 +1,8 @@
+// core/src/main/java/com/mycompany/myrubikscube/CubeApp.kt
 package com.mycompany.myrubikscube
 
-import com.badlogic.gdx.Application
 import com.badlogic.gdx.ApplicationAdapter
 import com.badlogic.gdx.Gdx
-import com.badlogic.gdx.InputMultiplexer
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.PerspectiveCamera
 import com.badlogic.gdx.graphics.g3d.Environment
@@ -12,7 +11,6 @@ import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
 import com.badlogic.gdx.graphics.g3d.utils.CameraInputController
 import com.badlogic.gdx.scenes.scene2d.Stage
-import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
 import com.badlogic.gdx.utils.viewport.ScreenViewport
 import com.kotcrab.vis.ui.VisUI
@@ -31,7 +29,7 @@ class CubeApp(
 ) : ApplicationAdapter() {
 
     companion object {
-        private const val TAG = "rubik-app"
+        private const val TAG = "CubeApp"
     }
 
     private lateinit var cube: RubiksCube3x3x3
@@ -43,7 +41,7 @@ class CubeApp(
     private lateinit var stage: Stage
 
     override fun create() {
-        Gdx.app.logLevel = Application.LOG_DEBUG
+        Gdx.app.logLevel = com.badlogic.gdx.Application.LOG_DEBUG
 
         // Initialize min2phase only once
         Search.init()
@@ -82,17 +80,16 @@ class CubeApp(
         // Solve button
         val solveButton = VisTextButton("Solve").apply {
             addListener(object : ClickListener() {
-                override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                override fun clicked(event: com.badlogic.gdx.scenes.scene2d.InputEvent?, x: Float, y: Float) {
                     cube.solve()
                 }
             })
         }
 
-        // "Scan" button
-        val scanButton = VisTextButton("Scan").apply {
+        val scanButton = VisTextButton("Scan Cube").apply {
             addListener(object : ClickListener() {
-                override fun clicked(event: InputEvent?, x: Float, y: Float) {
-                    platformBridge?.startCameraScan()
+                override fun clicked(event: com.badlogic.gdx.scenes.scene2d.InputEvent?, x: Float, y: Float) {
+                    platformBridge?.startColorInputActivity()
                 }
             })
         }
@@ -100,26 +97,27 @@ class CubeApp(
         // Undo/Redo
         val undoButton = VisTextButton("Undo").apply {
             addListener(object : ClickListener() {
-                override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                override fun clicked(event: com.badlogic.gdx.scenes.scene2d.InputEvent?, x: Float, y: Float) {
                     cube.undo()
                 }
             })
         }
         val redoButton = VisTextButton("Redo").apply {
             addListener(object : ClickListener() {
-                override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                override fun clicked(event: com.badlogic.gdx.scenes.scene2d.InputEvent?, x: Float, y: Float) {
                     cube.redo()
                 }
             })
         }
 
-        rootTable.top().left().pad(10f)
-        rootTable.add(solveButton).padRight(10f)
+        // Add buttons to the UI
+        rootTable.top().left().pad(20f)
         rootTable.add(scanButton).padRight(10f)
+        rootTable.add(solveButton).padRight(10f)
         rootTable.add(undoButton).padRight(10f)
         rootTable.add(redoButton).padRight(10f)
 
-        val multiplexer = InputMultiplexer(stage, InputHandler(cube, camera), cameraController)
+        val multiplexer = com.badlogic.gdx.InputMultiplexer(stage, InputHandler(cube, camera), cameraController)
         Gdx.input.inputProcessor = multiplexer
     }
 
@@ -129,10 +127,10 @@ class CubeApp(
 
         cameraController.update()
         batch.begin(camera)
-        cube.draw()  // 1) Draw the cube (either static or partial-rotation)
+        cube.draw()  // Draw the cube (either static or partial-rotation)
         batch.end()
 
-        cube.onNextFrame()  // 2) Let the animation proceed
+        cube.onNextFrame()  // Let the animation proceed
 
         // Draw the stage UI
         stage.act()
@@ -147,35 +145,38 @@ class CubeApp(
     }
 
     /**
-     * Called from Android once scanning is done (with a 54 char layout).
+     * Called from Android once the cube string is received.
+     *
+     * @param scannedCubeString The 54-character cube string.
      */
     fun onCubeScanned(scannedCubeString: String) {
-        // 1) Cancel any in-progress solver
-        cube.cancelSolving()
-        // If you had a randomizing animation, also do: cube.stopRandomize()
+        if (!::cube.isInitialized) {
+            Gdx.app.error(TAG, "Cube is not initialized yet, skipping cube scan.")
+            return
+        }
 
-        // 2) Apply the scanned layout to the cube squares
+        Log.d(TAG, "onCubeScanned called with string: $scannedCubeString")
+        cube.cancelSolving()
         setCubeColorsFromScan(scannedCubeString)
 
-        // 3) Automatically solve the newly-updated layout
-        //    which will show each step in the on-screen 3D cube:
-        if (cube.getState() == RubiksCube.CubeState.IDLE) {
-            cube.solve()
-        } else {
-            // fallback if for some reason it wasn't idle:
-            Gdx.app.postRunnable { cube.solve() }
+        Gdx.app.postRunnable {
+            cube.draw() // Ensure rendering is updated
         }
     }
 
+
+
     /**
-     * Convert scanned string -> color assignments -> put on 3D cube squares
+     * Converts the scanned string to color assignments and applies them to the cube's squares.
+     *
+     * @param scannedColors The 54-character cube string.
      */
     private fun setCubeColorsFromScan(scannedColors: String) {
         if (scannedColors.length != 54) {
-            Log.e(TAG, "Scanned color string not 54 chars? => $scannedColors")
+            Gdx.app.error(TAG, "Scanned color string not 54 chars? => $scannedColors")
             return
         }
-        // min2phase standard order: U(0..8), R(9..17), F(18..26), D(27..35), L(36..44), B(45..53)
+        // min2phase standard order: U, R, F, D, L, B
         val charToColor = mapOf(
             'U' to Cube.COLOR_TOP,
             'R' to Cube.COLOR_RIGHT,
@@ -188,31 +189,38 @@ class CubeApp(
         for (i in 0 until 9) {
             val c = scannedColors[i]
             cube.mTopSquares[i].color = charToColor[c] ?: Cube.Color_GRAY
+            Log.d(TAG, "Top square $i set to ${cube.mTopSquares[i].color}")
         }
         for (i in 0 until 9) {
             val c = scannedColors[9 + i]
             cube.mRightSquares[i].color = charToColor[c] ?: Cube.Color_GRAY
+            Log.d(TAG, "Right square $i set to ${cube.mRightSquares[i].color}")
         }
         for (i in 0 until 9) {
             val c = scannedColors[18 + i]
             cube.mFrontSquares[i].color = charToColor[c] ?: Cube.Color_GRAY
+            Log.d(TAG, "Front square $i set to ${cube.mFrontSquares[i].color}")
         }
         for (i in 0 until 9) {
             val c = scannedColors[27 + i]
             cube.mBottomSquares[i].color = charToColor[c] ?: Cube.Color_GRAY
+            Log.d(TAG, "Bottom square $i set to ${cube.mBottomSquares[i].color}")
         }
         for (i in 0 until 9) {
             val c = scannedColors[36 + i]
             cube.mLeftSquares[i].color = charToColor[c] ?: Cube.Color_GRAY
+            Log.d(TAG, "Left square $i set to ${cube.mLeftSquares[i].color}")
         }
         for (i in 0 until 9) {
             val c = scannedColors[45 + i]
             cube.mBackSquares[i].color = charToColor[c] ?: Cube.Color_GRAY
+            Log.d(TAG, "Back square $i set to ${cube.mBackSquares[i].color}")
         }
     }
 
+
     /**
-     * Simple renderer that sets rotation transform on squares
+     * Renderer that applies rotation transformations to the cube's squares.
      */
     inner class Renderer : CubeRenderer {
         override fun drawSquare(square: Square) {

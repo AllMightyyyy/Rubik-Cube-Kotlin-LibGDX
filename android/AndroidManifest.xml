@@ -1,27 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
-  <uses-feature android:glEsVersion="0x00020000" android:required="true"/>
-  <application
-      android:allowBackup="true"
-      android:fullBackupContent="true"
-      android:icon="@drawable/ic_launcher"
-      android:isGame="true"
-      android:appCategory="game"
-      android:label="@string/app_name"
-      tools:ignore="UnusedAttribute"
-      android:theme="@style/GdxTheme">
-    <activity
-        android:name="com.mycompany.myrubikscube.android.AndroidLauncher"
-        android:label="@string/app_name"
-        android:screenOrientation="landscape"
-        android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout"
-        android:exported="true">
-        <intent-filter>
-        <action android:name="android.intent.action.MAIN"/>
-        <category android:name="android.intent.category.LAUNCHER"/>
-      </intent-filter>
-    </activity>
-  </application>
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.mycompany.myrubikscube">
 
+    <!-- Permissions -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
+    <!-- Features -->
+    <uses-feature
+        android:glEsVersion="0x00020000"
+        android:required="true" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
+    <application
+        android:allowBackup="true"
+        android:label="@string/app_name"
+        android:theme="@style/AppTheme"
+        android:exported="true">
+
+        <!-- MainActivity as the Launcher Activity -->
+        <activity
+            android:name="com.mycompany.myrubikscube.android.MainActivity"
+            android:label="Rubik's Cube Solver"
+            android:screenOrientation="portrait"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+        <!-- ColorInputActivity -->
+        <activity
+            android:name="com.mycompany.myrubikscube.android.ColorInputActivity"
+            android:label="Color Input"
+            android:screenOrientation="portrait"
+            android:exported="false"/>
+
+        <!-- LibGDX Launcher Activity -->
+        <activity
+            android:name="com.mycompany.myrubikscube.android.AndroidLauncher"
+            android:label="@string/app_name"
+            android:screenOrientation="landscape"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout"
+            android:exported="false">
+        </activity>
+    </application>
 </manifest>

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/scrollView"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:id="@+id/rootLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Header with Face Label and Navigation Buttons -->
+        <LinearLayout
+            android:id="@+id/headerLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+
+            <!-- Previous Button -->
+            <Button
+                android:id="@+id/prevButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Previous"
+                android:enabled="false" />
+
+            <!-- Face Label -->
+            <TextView
+                android:id="@+id/faceLabelTextView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Up Face"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_weight="1"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp" />
+
+            <!-- Next Button -->
+            <Button
+                android:id="@+id/nextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Next" />
+        </LinearLayout>
+
+        <!-- 3x3 Grid for Current Face -->
+        <GridLayout
+            android:id="@+id/currentFaceGrid"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="3"
+            android:rowCount="3"
+            android:layout_marginBottom="24dp"
+            android:gravity="center"
+            android:layout_gravity="center"
+            android:orientation="horizontal">
+            <!-- CubieButtons will be added programmatically -->
+        </GridLayout>
+
+        <!-- Generate and Solve Button -->
+        <Button
+            android:id="@+id/generateSolveButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Generate and Solve"
+            android:textSize="16sp"
+            android:layout_marginTop="24dp"
+            android:padding="16dp"
+            android:backgroundTint="@color/purple_500"
+            android:textColor="@android:color/white"
+            android:enabled="false" />
+
+        <!-- Debug Cube String TextView -->
+        <TextView
+            android:id="@+id/debugCubeStringTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Cube String: Not generated yet"
+            android:textSize="14sp"
+            android:textColor="@android:color/white"
+            android:background="@android:color/darker_gray"
+            android:padding="8dp"
+            android:gravity="center"
+            android:layout_marginTop="16dp"/>
+    </LinearLayout>
+</ScrollView>
