@@ -36,7 +36,7 @@ class Square {
         initSquare(vertices, color, face)
     }
     constructor(vertices: FloatArray, color: Int) : this(vertices, color, -1)
-    constructor(vertices: FloatArray) : this(vertices, Cube.Color_GRAY)
+    constructor(vertices: FloatArray) : this(vertices, Cube.COLOR_GRAY)
     constructor(points: Array<Point3D>, color: Int) {
         val verts = FloatArray(points.size * 3)
         for (i in points.indices) {
@@ -61,7 +61,6 @@ class Square {
         modelInstance = ModelInstance(model)
         mColor = color
         mFace = face
-        // compute center
         mCenter.x = (vertices[0] + vertices[3] + vertices[6] + vertices[9]) / 4f
         mCenter.y = (vertices[1] + vertices[4] + vertices[7] + vertices[10]) / 4f
         mCenter.z = (vertices[2] + vertices[5] + vertices[8] + vertices[11]) / 4f

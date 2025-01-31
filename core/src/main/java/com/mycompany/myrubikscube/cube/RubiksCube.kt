@@ -23,7 +23,6 @@ open class RubiksCube : Cube {
         private const val MAX_UNDO_COUNT = 40
     }
 
-    // Possible cube states
     enum class CubeState {
         IDLE,
         RANDOMIZE,
@@ -33,8 +32,8 @@ open class RubiksCube : Cube {
     }
 
     // A listener interface to communicate events back to the caller
-    protected var mListener: CubeListener? = null
-    protected var mState: CubeState = CubeState.IDLE
+    open var mListener: CubeListener? = null
+    open var mState: CubeState = CubeState.IDLE
 
     // The current rotation being performed
     private var mRotation: Rotation? = null
@@ -85,7 +84,6 @@ open class RubiksCube : Cube {
     private var mSpeed = 1  // 0=slow,1=medium,2=fast
     private var mAngleDelta = ANGLE_DELTA_NORMAL
 
-    // Common init code
     private fun init() {
         mCurrentAlgo = null
         mRotation = Rotation()
@@ -112,62 +110,12 @@ open class RubiksCube : Cube {
     }
 
     /**
-     * For future use: restore a serialized color layout
-     */
-    fun restoreColors(colors: String) {
-        // TODO: Implement serialization logic if needed
-    }
-
-    /**
-     * For future use: serialize the color layout
-     */
-    fun getColorString(): String? {
-        // not implemented
-        return null
-    }
-
-    /**
-     * Access the current state
-     */
-    fun getState(): CubeState {
-        return mState
-    }
-
-    /**
-     * Start a new random game (scramble)
-     */
-    fun newGame(count: Int) {
-        reset()
-        randomize(count)
-    }
-
-    /**
      * Provide a listener for events
      */
     fun setListener(listener: CubeListener) {
         mListener = listener
     }
 
-    /**
-     * The “helpMe()” logic: unscramble using the stored random moves
-     */
-    fun helpMe() {
-        if (mRandomizedMoves.isNullOrEmpty()) {
-            return
-        }
-        reset()
-        // Re-apply the random moves
-        for (r in mRandomizedMoves!!) {
-            rotate(r.axis, r.direction, r.startFace)
-        }
-        // Build an algorithm that is the reverse
-        val algorithm = Algorithm()
-        for (i in mRandomizedMoves!!.indices.reversed()) {
-            algorithm.addStep(mRandomizedMoves!![i].getReverse())
-        }
-        mState = CubeState.HELPING
-        setAlgo(algorithm)
-    }
 
     /**
      * Randomly rotate for [count] moves (instant, no animation)
@@ -468,19 +416,16 @@ open class RubiksCube : Cube {
     /**
      * Provide an algorithm to run
      */
-    protected fun setAlgo(algo: Algorithm) {
-        if (mCurrentAlgo != null && mCurrentAlgo!!.isDone() == false) {
+    protected open fun setAlgo(algo: Algorithm) {
+        if (mCurrentAlgo != null && !mCurrentAlgo!!.isDone()) {
             throw IllegalStateException("There is already an algorithm running")
         }
-        if (mState != CubeState.SOLVING &&
-            mState != CubeState.TESTING &&
-            mState != CubeState.HELPING
-        ) {
+        if (mState != CubeState.SOLVING && mState != CubeState.TESTING && mState != CubeState.HELPING) {
             throw IllegalStateException("Invalid state for algos: $mState")
         }
         mCurrentAlgo = algo
-        mRotation = algo.getNextStep()
         rotateMode = RotateMode.ALGORITHM
+        mRotation = algo.getNextStep()
         mRotation?.start()
     }
 
@@ -656,18 +601,6 @@ open class RubiksCube : Cube {
                 sq.color = color
             }
         }
-    }
-
-    fun setColor(face: Int, row: Int, column: Int, color: Int) {
-        // no-op stub
-    }
-
-    fun setRowColor(face: Int, row: Int, color: Int) {
-        // no-op stub
-    }
-
-    fun setColumnColor(face: Int, column: Int, color: Int) {
-        // no-op stub
     }
 
     /**

@@ -104,6 +104,11 @@ dependencies {
   implementation "androidx.camera:camera-lifecycle:$camerax_version"
   implementation "androidx.camera:camera-view:$camerax_version"
 
+  def gdxVideoVersion = '1.3.2-SNAPSHOT'
+  implementation "com.badlogicgames.gdx-video:gdx-video:$gdxVideoVersion"
+  implementation "com.badlogicgames.gdx-video:gdx-video-android:$gdxVideoVersion"
+
+  implementation 'com.google.android.exoplayer:exoplayer:2.19.1'
   // If you use camera-extensions (optional):
   // implementation "androidx.camera:camera-extensions:$camerax_version"
 

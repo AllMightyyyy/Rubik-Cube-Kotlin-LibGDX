@@ -19,7 +19,7 @@ class Algorithm {
         }
     }
 
-    private val steps = ArrayList<Rotation>()
+    val steps = ArrayList<Rotation>()
     private var currentPosition = 0
 
     constructor()
@@ -71,3 +71,4 @@ class Algorithm {
         } else steps[currentPosition++].duplicate()
     }
 }
+

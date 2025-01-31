@@ -1,4 +1,3 @@
-// android/src/main/java/com/mycompany/myrubikscube/android/Cubie.kt
 package com.mycompany.myrubikscube.android
 
 data class Cubie(

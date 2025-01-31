@@ -93,8 +93,24 @@ class ColorInputActivity : AppCompatActivity() {
         val existingCubies = cubieMap[face]
         val cubies = existingCubies ?: Array(9) { index ->
             CubieButton(this, face, index).apply {
-                // Set default color
-                setBackgroundColor(getColor(R.color.gray))
+                if (index == 4) {
+                    // Center position
+                    val centerColor = when (face) {
+                        Face.UP -> ColorOption.WHITE
+                        Face.RIGHT -> ColorOption.RED
+                        Face.FRONT -> ColorOption.GREEN
+                        Face.DOWN -> ColorOption.YELLOW
+                        Face.LEFT -> ColorOption.ORANGE
+                        Face.BACK -> ColorOption.BLUE
+                    }
+                    setBackgroundColor(getColor(centerColor.colorResId))
+                    this.colorOption = centerColor
+                    isEnabled = false
+                    isClickable = false
+                } else {
+                    // Only set gray for non-center cubies
+                    setBackgroundColor(getColor(R.color.gray))
+                }
                 text = ""
                 // Set layout parameters
                 val sizeInDp = 80
@@ -167,11 +183,11 @@ class ColorInputActivity : AppCompatActivity() {
                     if (colorOption != null) {
                         sb.append(colorOption.getChar())
                     } else {
-                        sb.append('X') // Undefined
+                        sb.append('X')
                     }
                 }
             } else {
-                sb.append("XXXXXXXXX") // Undefined
+                sb.append("XXXXXXXXX")
             }
         }
 
@@ -198,7 +214,7 @@ class ColorInputActivity : AppCompatActivity() {
         for (c in cubeString.toCharArray()) {
             if (c == 'X') {
                 Log.e("ColorInputActivity", "Cube string contains undefined color 'X'")
-                return false // Undefined
+                return false
             }
             colorCount[c] = colorCount.getOrDefault(c, 0) + 1
         }
@@ -217,17 +233,14 @@ class ColorInputActivity : AppCompatActivity() {
     }
 
     /**
-     * Sends the cube string to CubeApp via Intent.
-     *
-     * @param cubeString The 54-character cube string.
+     * Sends the cube string back to AndroidLauncher via setResult.
      */
     private fun sendCubeStringToCubeApp(cubeString: String) {
-        Log.d("ColorInputActivity", "Sending cube string to CubeApp: $cubeString")
-        val intent = Intent(this, AndroidLauncher::class.java).apply {
+        val resultIntent = Intent().apply {
             putExtra("CUBE_STRING", cubeString)
         }
-        startActivity(intent)
-        finish() // Close the ColorInputActivity
+        setResult(RESULT_OK, resultIntent)
+        finish()
     }
 
     /**
@@ -238,11 +251,21 @@ class ColorInputActivity : AppCompatActivity() {
             val cubies = cubieMap[face]
             if (cubies == null || cubies.any { it.colorOption == null }) {
                 generateSolveButton.isEnabled = false
-                Log.d("ColorInputActivity", "Generate button disabled: Face ${face.name} has undefined cubies.")
+                return
+            }
+            val centerColor = when (face) {
+                Face.UP -> ColorOption.WHITE
+                Face.RIGHT -> ColorOption.RED
+                Face.FRONT -> ColorOption.GREEN
+                Face.DOWN -> ColorOption.YELLOW
+                Face.LEFT -> ColorOption.ORANGE
+                Face.BACK -> ColorOption.BLUE
+            }
+            if (cubies[4].colorOption != centerColor) {
+                generateSolveButton.isEnabled = false
                 return
             }
         }
         generateSolveButton.isEnabled = true
-        Log.d("ColorInputActivity", "Generate button enabled: All cubies are colored.")
     }
 }

@@ -1,0 +1,49 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main_menu_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
+
+    <com.google.android.exoplayer2.ui.PlayerView
+        android:id="@+id/backgroundVideoView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        android:keepScreenOn="true"
+        app:resize_mode="fill"
+        app:use_controller="false"
+        android:clickable="false"
+    android:focusable="false" />
+
+    <!-- Overlay Buttons -->
+    <LinearLayout
+        android:id="@+id/buttons_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layout_gravity="center"
+        android:padding="16dp"
+        android:background="@android:color/transparent">
+
+        <Button
+            android:id="@+id/playGameButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Play Game"
+            android:layout_marginBottom="16dp"
+            android:padding="16dp"
+            android:background="@drawable/button_background" />
+
+        <Button
+            android:id="@+id/scanCubeButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Scan Cube"
+            android:padding="16dp"
+            android:background="@drawable/button_background" />
+
+    </LinearLayout>
+
+</FrameLayout>

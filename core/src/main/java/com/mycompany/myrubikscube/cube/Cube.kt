@@ -22,7 +22,6 @@ open class Cube(
     companion object {
         private const val tag = "rubik-struct"
 
-        // Do not change these values. They are used in many places.
         const val FACE_FRONT = 0
         const val FACE_RIGHT = 1
         const val FACE_BACK = 2
@@ -40,14 +39,14 @@ open class Cube(
         const val Color_WHITE = 0xFFFFFFFF.toInt()
         const val Color_YELLOW = 0xFFFF00FF.toInt()
         const val Color_BLUE = 0x0000FFFF
-        const val Color_GRAY = 0x7F7F7FFF
+        const val COLOR_GRAY = 0x7F7F7FFF
 
         @JvmField var COLOR_TOP = Color_WHITE
         @JvmField var COLOR_BOTTOM = Color_YELLOW
         @JvmField var COLOR_LEFT = Color_ORANGE
         @JvmField var COLOR_RIGHT = Color_RED
-        @JvmField var COLOR_FRONT = Color_BLUE
-        @JvmField var COLOR_BACK = Color_GREEN
+        @JvmField var COLOR_FRONT = Color_GREEN
+        @JvmField var COLOR_BACK = Color_BLUE
 
         private val faceNames = arrayOf("front", "right", "back", "left", "top", "bottom")
 
@@ -206,7 +205,6 @@ open class Cube(
         }
 
         private fun skewedRotateFaceColors(squares: ArrayList<Square>, w: Int, h: Int) {
-            // If it's a single row/column, just reverse
             if (w == 1 || h == 1) {
                 val len = max(w, h)
                 for (i in 0 until (len / 2)) {

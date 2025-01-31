@@ -7,5 +7,4 @@
     android:rowCount="2"
     android:padding="16dp"
     android:gravity="center">
-    <!-- Color buttons will be added programmatically -->
 </GridLayout>

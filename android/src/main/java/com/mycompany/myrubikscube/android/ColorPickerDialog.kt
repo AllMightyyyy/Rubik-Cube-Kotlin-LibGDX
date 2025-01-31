@@ -33,7 +33,6 @@ class ColorPickerDialog(
                 text = colorOption.displayName
                 setTextColor(Color.WHITE)
                 textSize = 16f
-                // Set size
                 val sizeInDp = 80
                 val scale = context.resources.displayMetrics.density
                 val sizeInPx = (sizeInDp * scale + 0.5f).toInt()
@@ -46,7 +45,7 @@ class ColorPickerDialog(
                     listener.onColorSelected(colorOption)
                     dismiss()
                 }
-                contentDescription = colorOption.displayName // For accessibility
+                contentDescription = colorOption.displayName
             }
 
             colorGrid.addView(colorButton)

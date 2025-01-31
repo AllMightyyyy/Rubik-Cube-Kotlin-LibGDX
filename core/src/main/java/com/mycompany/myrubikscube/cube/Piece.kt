@@ -18,7 +18,6 @@ class Piece(val type: PieceType) {
 
     fun addSquare(sq: Square) {
         if (!mSquares.contains(sq)) {
-            // Just a safety check, not strictly needed
             if ((type == PieceType.CENTER && mSquares.size >= 2) ||
                 (type == PieceType.EDGE && mSquares.size >= 3) ||
                 (type == PieceType.CORNER && mSquares.size >= 6)

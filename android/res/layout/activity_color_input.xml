@@ -12,7 +12,6 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Header with Face Label and Navigation Buttons -->
         <LinearLayout
             android:id="@+id/headerLayout"
             android:layout_width="match_parent"
@@ -29,7 +28,6 @@
                 android:text="Previous"
                 android:enabled="false" />
 
-            <!-- Face Label -->
             <TextView
                 android:id="@+id/faceLabelTextView"
                 android:layout_width="0dp"
@@ -42,7 +40,6 @@
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp" />
 
-            <!-- Next Button -->
             <Button
                 android:id="@+id/nextButton"
                 android:layout_width="wrap_content"
@@ -50,7 +47,6 @@
                 android:text="Next" />
         </LinearLayout>
 
-        <!-- 3x3 Grid for Current Face -->
         <GridLayout
             android:id="@+id/currentFaceGrid"
             android:layout_width="match_parent"
@@ -64,7 +60,6 @@
             <!-- CubieButtons will be added programmatically -->
         </GridLayout>
 
-        <!-- Generate and Solve Button -->
         <Button
             android:id="@+id/generateSolveButton"
             android:layout_width="match_parent"
@@ -77,7 +72,6 @@
             android:textColor="@android:color/white"
             android:enabled="false" />
 
-        <!-- Debug Cube String TextView -->
         <TextView
             android:id="@+id/debugCubeStringTextView"
             android:layout_width="match_parent"

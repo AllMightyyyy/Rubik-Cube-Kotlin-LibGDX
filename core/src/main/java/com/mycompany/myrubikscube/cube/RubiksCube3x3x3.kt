@@ -69,48 +69,45 @@ class RubiksCube3x3x3 : RubiksCube(SIZE) {
         private const val EDGE_TOP_RIGHT = MID_ROW_RIGHT
     }
 
-    // We'll keep the old SolveState approach, but we won't use it in the new `solve()` method.
     private var solveState = SolveState.None
 
     // The colors of the top and bottom center squares
     private var mTopColor = 0
     private var mBottomColor = 0
 
+    private var solutionSteps: List<Rotation> = emptyList()
+    private var currentStepIndex: Int = 0
+    private var isStepByStepSolving: Boolean = false
+
+    override var mState = CubeState.IDLE
+    override var mListener: CubeListener? = null
+
+    public override fun setAlgo(algo: Algorithm) {
+        super.setAlgo(algo)
+        if (isStepByStepSolving) {
+            mState = CubeState.SOLVING
+        }
+    }
+
     /**
      * The new override: calls min2phase and animates that solution.
      */
     override fun solve(): Int {
-        // Basic checks
-        if (mState == CubeState.TESTING) {
-            sendMessage("wait please")
+        val steps = computeSolutionSteps() ?: return -1
+        if (steps.isEmpty()) {
+            sendMessage("No solution steps available.")
             return -1
         }
-        if (mState != CubeState.IDLE) {
-            sendMessage("Invalid state to solve: $mState")
-            return -1
-        }
-        // Make sure we have no leftover undo
-        clearUndoStack()
+        solutionSteps = steps
+        currentStepIndex = 0
 
-        // 1) Convert current colors -> 54-char string for min2phase
-        val scrambled = toMin2PhaseString()
-
-        // 2) Solve with min2phase
-        val search = Search()
-        val result = search.solution(scrambled, 21, 100_000_000, 0, 0)
-        if (result.startsWith("Error")) {
-            sendMessage("No solution found or error: $result")
-            return -1
-        }
-
-        // 3) Parse min2phase result into an Algorithm
-        val algo = parseMin2PhaseSolution(result)
-        Log.d(tag, algo.toString())
-
-        // 4) Mark our state as solving, so setAlgo(...) is valid
+        // 4) Mark our state as solving
         mState = CubeState.SOLVING
 
-        // 5) Animate that algorithm
+        // 5) Animate the entire solution
+        val algo = Algorithm().apply {
+            steps.forEach { addStep(it) }
+        }
         setAlgo(algo)
 
         return 0
@@ -126,7 +123,6 @@ class RubiksCube3x3x3 : RubiksCube(SIZE) {
     }
 
     override fun startSolving() {
-        // The original step-solver code. We won't call it from solve(), but let's keep it.
         super.startSolving()
         solveState = SolveState.FirstFaceCross
 
@@ -135,13 +131,17 @@ class RubiksCube3x3x3 : RubiksCube(SIZE) {
         mBottomColor = mBottomSquares[CENTER].color
         sendMessage("Top is ${mTopSquares[CENTER].colorName()} and bottom is ${mBottomSquares[CENTER].colorName()}")
 
-        firstFaceCross()  // the original step-1
+        firstFaceCross()
     }
 
     // ------------------------------------------------------------------------
     // MIN2PHASE HELPER: Convert the current 3x3 state into a 54-char string
     // in the U,R,F,D,L,B order that min2phase expects.
     // ------------------------------------------------------------------------
+    /**
+     * MIN2PHASE HELPER: Convert the current 3x3 state into a 54-char string
+     * in the U,R,F,D,L,B order that min2phase expects.
+     */
     fun toMin2PhaseString(): String {
         val sb = StringBuilder(54)
         // We map each face color to one of [U,R,F,D,L,B].
@@ -165,7 +165,7 @@ class RubiksCube3x3x3 : RubiksCube(SIZE) {
         appendFaceString(mLeftSquares, sb, 'L')
         // (6) B face (mBackSquares)
         appendFaceString(mBackSquares, sb, 'B')
-        com.mycompany.myrubikscube.Log.w(tag, sb.toString())
+        Log.w(tag, sb.toString())
         return sb.toString()
     }
 
@@ -185,7 +185,7 @@ class RubiksCube3x3x3 : RubiksCube(SIZE) {
             COLOR_BOTTOM -> 'D'
             COLOR_LEFT   -> 'L'
             COLOR_BACK   -> 'B'
-            else         -> 'X' // or throw an error if unknown
+            else         -> 'X'
         }
     }
 
@@ -620,8 +620,8 @@ class RubiksCube3x3x3 : RubiksCube(SIZE) {
     private fun isCornerAligned(piece: Piece): Boolean {
         if (piece.mSquares.size != 3) return false
         for (sq in piece.mSquares) {
-            val cFace = mAllFaces[sq.face]!!
-            if (sq.color != cFace[CENTER].color) {
+            val centerColor = mAllFaces[sq.face]!![CENTER].color
+            if (sq.color != centerColor) {
                 return false
             }
         }
@@ -813,7 +813,7 @@ class RubiksCube3x3x3 : RubiksCube(SIZE) {
         }
 
         if (yellowCount == CUBE_SIDES) {
-            sendMessage("top cross is in place..!")
+            sendMessage("Top cross is in place..!")
             proceedToNextState()
             return
         }
@@ -910,7 +910,7 @@ class RubiksCube3x3x3 : RubiksCube(SIZE) {
             }
             setAlgo(algo)
         } else {
-            sendMessage("top cross is now aligned")
+            sendMessage("Top cross is now aligned")
             proceedToNextState()
         }
     }
@@ -996,7 +996,7 @@ class RubiksCube3x3x3 : RubiksCube(SIZE) {
 
         for (c in corners.indices) {
             val piece = mYaxisLayers[OUTER][corners[c]]
-            if (isCornerPositioned(piece)) {
+            if (isCornerAligned(piece)) {
                 positionedCorners++
                 if (firstPositionedCorner == -1) {
                     firstPositionedCorner = corner2index(FACE_TOP, corners[c])
@@ -1035,18 +1035,18 @@ class RubiksCube3x3x3 : RubiksCube(SIZE) {
         if (direction == Direction.COUNTER_CLOCKWISE) {
             algo.addStep(Axis.X_AXIS, Direction.CLOCKWISE, OUTER)
             algo.addStep(Axis.Y_AXIS, Direction.COUNTER_CLOCKWISE, OUTER)
-            algo.addStep(Axis.X_AXIS, Direction.CLOCKWISE, INNER)
+            algo.addStep(Axis.X_AXIS, Direction.COUNTER_CLOCKWISE, INNER)
             algo.addStep(Axis.Y_AXIS, Direction.CLOCKWISE, OUTER)
             algo.addStep(Axis.X_AXIS, Direction.COUNTER_CLOCKWISE, OUTER)
             algo.addStep(Axis.Y_AXIS, Direction.COUNTER_CLOCKWISE, OUTER)
             algo.addStep(Axis.X_AXIS, Direction.COUNTER_CLOCKWISE, INNER)
             algo.addStep(Axis.Y_AXIS, Direction.CLOCKWISE, OUTER)
         } else {
-            algo.addStep(Axis.X_AXIS, Direction.CLOCKWISE, INNER)
+            algo.addStep(Axis.X_AXIS, Direction.COUNTER_CLOCKWISE, INNER)
             algo.addStep(Axis.Y_AXIS, Direction.CLOCKWISE, OUTER)
             algo.addStep(Axis.X_AXIS, Direction.CLOCKWISE, OUTER)
             algo.addStep(Axis.Y_AXIS, Direction.COUNTER_CLOCKWISE, OUTER)
-            algo.addStep(Axis.X_AXIS, Direction.COUNTER_CLOCKWISE, INNER)
+            algo.addStep(Axis.X_AXIS, Direction.CLOCKWISE, INNER)
             algo.addStep(Axis.Y_AXIS, Direction.CLOCKWISE, OUTER)
             algo.addStep(Axis.X_AXIS, Direction.COUNTER_CLOCKWISE, OUTER)
             algo.addStep(Axis.Y_AXIS, Direction.COUNTER_CLOCKWISE, OUTER)
@@ -1054,11 +1054,12 @@ class RubiksCube3x3x3 : RubiksCube(SIZE) {
         return algo
     }
 
-    private fun isCornerPositioned(piece: Piece): Boolean {
-        if (piece.type != Piece.PieceType.CORNER) throw AssertionError()
-        for (sq in piece.mSquares) {
-            val centerColor = mAllFaces[sq.face]!![CENTER].color
-            if (sq.color != centerColor) {
+    private fun checkTopCorners(): Boolean {
+        val corners = intArrayOf(LAST_ROW_RIGHT, FIRST_ROW_RIGHT, FIRST_ROW_LEFT, LAST_ROW_LEFT)
+        for (c in corners) {
+            val piece = mYaxisLayers[OUTER][c]
+            if (!isCornerAligned(piece)) {
+                Log.w(tag, "$piece is not aligned")
                 return false
             }
         }
@@ -1091,21 +1092,9 @@ class RubiksCube3x3x3 : RubiksCube(SIZE) {
         return algo
     }
 
-    private fun checkTopCorners(): Boolean {
-        val corners = intArrayOf(LAST_ROW_RIGHT, FIRST_ROW_RIGHT, FIRST_ROW_LEFT, LAST_ROW_LEFT)
-        for (c in corners) {
-            val piece = mYaxisLayers[OUTER][c]
-            if (!isCornerAligned(piece)) {
-                Log.w(tag, "$piece is not aligned")
-                return false
-            }
-        }
-        return true
-    }
-
     private fun proceedToNextState() {
         if (mState != CubeState.SOLVING) {
-            Log.e(tag, "invalid state $mState")
+            Log.e(tag, "Invalid state $mState")
             return
         }
         when (solveState) {
@@ -1144,9 +1133,18 @@ class RubiksCube3x3x3 : RubiksCube(SIZE) {
         }
     }
 
+    /**
+     * Override `getSolutionSteps` to return the solution steps.
+     */
+    fun getSolutionSteps(): List<Rotation> = solutionSteps
+
     override fun updateAlgo() {
         super.updateAlgo()
         if (mState != CubeState.SOLVING) return
+
+        if (isStepByStepSolving) {
+            return
+        }
 
         when (solveState) {
             SolveState.FirstFaceCross -> firstFaceCross()
@@ -1286,5 +1284,51 @@ class RubiksCube3x3x3 : RubiksCube(SIZE) {
             rotations.add(Rotation(axis, dir, 0, SIZE))
         }
         return rotations
+    }
+
+    /**
+     * Computes the solution steps using min2phase and returns them as a list of Rotations.
+     * Does not set any algorithm or modify the cube's state.
+     *
+     * @return List of Rotations that solve the cube, or null if an error occurs.
+     */
+    fun computeSolutionSteps(): List<Rotation>? {
+        if (mState == CubeState.TESTING) {
+            sendMessage("Please wait, the cube is currently being tested.")
+            return null
+        }
+        if (mState != CubeState.IDLE) {
+            sendMessage("Invalid state to solve: $mState")
+            return null
+        }
+        clearUndoStack()
+
+        val scrambled = toMin2PhaseString()
+
+        val search = Search()
+        val result = search.solution(scrambled, 21, 100_000_000, 0, 0)
+        if (result.startsWith("Error")) {
+            sendMessage("No solution found or error: $result")
+            return null
+        }
+
+        val algo = parseMin2PhaseSolution(result)
+        Log.d(tag, algo.toString())
+
+        return algo.steps
+    }
+
+    /**
+     * Allows external classes to set the cube's state.
+     */
+    fun setState(state: CubeState) {
+        mState = state
+    }
+
+    /**
+     * Sets the flag indicating whether step-by-step solving is active.
+     */
+    fun setStepByStepSolving(active: Boolean) {
+        isStepByStepSolving = active
     }
 }
