@@ -21,7 +21,17 @@ android {
       assets.setSrcDirs(['../assets'])
       jniLibs.setSrcDirs(['libs'])
     }
+
   }
+  signingConfigs {
+    release {
+      storeFile file(project.property("MY_KEYSTORE_FILE"))
+      storePassword project.property("MY_KEYSTORE_PASSWORD")
+      keyAlias project.property("MY_KEY_ALIAS")
+      keyPassword project.property("MY_KEY_PASSWORD")
+    }
+  }
+
   packagingOptions {
 		resources {
 			excludes += ['META-INF/robovm/ios/robovm.xml', 'META-INF/DEPENDENCIES.txt', 'META-INF/DEPENDENCIES',
@@ -33,7 +43,7 @@ android {
   defaultConfig {
     applicationId 'com.mycompany.myrubikscube'
     minSdkVersion 23
-    targetSdkVersion 35
+    targetSdkVersion 34
     versionCode 1
     versionName "1.0"
     multiDexEnabled true
@@ -60,6 +70,7 @@ android {
   kotlin.compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
 
 }
+
 
 repositories {
   // needed for AAPT2, may be needed for other tools
