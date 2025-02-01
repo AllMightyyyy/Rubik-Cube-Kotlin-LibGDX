@@ -11,10 +11,8 @@ class CubeApp(
     lateinit var gameScreen: GameScreen
 
     override fun create() {
-        // Initialize GameScreen with optional initialCubeString
         gameScreen = GameScreen(this, initialCubeString)
 
-        // Set the initial screen to GameScreen
         setScreen(gameScreen)
     }
 
@@ -23,7 +21,6 @@ class CubeApp(
         super.dispose()
     }
 
-    // Implement CubeListener methods if needed
     override fun handleRotationCompleted() {}
     override fun handleCubeMessage(msg: String) {}
     override fun handleCubeSolved() {}

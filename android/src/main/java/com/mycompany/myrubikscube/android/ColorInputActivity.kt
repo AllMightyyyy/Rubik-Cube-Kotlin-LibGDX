@@ -12,7 +12,6 @@ import com.mycompany.myrubikscube.R
 
 class ColorInputActivity : AppCompatActivity() {
 
-    // GridLayouts for each face of the cube net
     private lateinit var gridUp: GridLayout
     private lateinit var gridRight: GridLayout
     private lateinit var gridFront: GridLayout
@@ -23,17 +22,13 @@ class ColorInputActivity : AppCompatActivity() {
     private lateinit var generateSolveButton: Button
     private lateinit var debugCubeStringTextView: TextView
 
-    // Mapping from Face to its CubieButtons
     private val cubieMap = HashMap<Face, Array<CubieButton>>()
-    // Standard face order for cube-string generation: U, R, F, D, L, B.
     private val faceOrder = listOf(Face.UP, Face.RIGHT, Face.FRONT, Face.DOWN, Face.LEFT, Face.BACK)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Use our net layout with labels
         setContentView(R.layout.activity_color_input_net)
 
-        // Bind each GridLayout by its ID.
         gridUp = findViewById(R.id.gridUp)
         gridRight = findViewById(R.id.gridRight)
         gridFront = findViewById(R.id.gridFront)
@@ -44,8 +39,6 @@ class ColorInputActivity : AppCompatActivity() {
         generateSolveButton = findViewById(R.id.generateSolveButton)
         debugCubeStringTextView = findViewById(R.id.debugCubeStringTextView)
 
-        // Initialize each face’s grid. The mapping here is fixed:
-        // gridUp → Face.UP, gridRight → Face.RIGHT, gridFront → Face.FRONT, etc.
         initializeFace(Face.UP, gridUp)
         initializeFace(Face.RIGHT, gridRight)
         initializeFace(Face.FRONT, gridFront)
@@ -53,7 +46,6 @@ class ColorInputActivity : AppCompatActivity() {
         initializeFace(Face.LEFT, gridLeft)
         initializeFace(Face.BACK, gridBack)
 
-        // When the user taps Generate & Solve, build the cube string, validate it, and send it back.
         generateSolveButton.setOnClickListener {
             val cubeString = generateCubeString()
             if (validateCubeString(cubeString)) {
@@ -87,7 +79,6 @@ class ColorInputActivity : AppCompatActivity() {
                     rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
                     setMargins(8, 8, 8, 8)
                 }
-                // For the center cubie, auto-assign the face's intended color.
                 if (index == 4) {
                     colorOption = when(face) {
                         Face.UP -> ColorOption.WHITE
@@ -98,10 +89,8 @@ class ColorInputActivity : AppCompatActivity() {
                         Face.BACK -> ColorOption.BLUE
                     }
                     setBackgroundColor(getColor(colorOption!!.colorResId))
-                    // Optionally, disable further editing:
                     isClickable = false
                 } else {
-                    // Start with a neutral color; user picks the color.
                     setBackgroundColor(getColor(R.color.gray))
                     setOnClickListener {
                         showColorPicker(this)
@@ -204,7 +193,6 @@ class ColorInputActivity : AppCompatActivity() {
                 generateSolveButton.isEnabled = false
                 return
             }
-            // Optionally, enforce that the center (index 4) is set.
             if (cubies[4].colorOption == null) {
                 generateSolveButton.isEnabled = false
                 return

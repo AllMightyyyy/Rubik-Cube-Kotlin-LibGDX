@@ -4,6 +4,8 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.Screen
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.PerspectiveCamera
+import com.badlogic.gdx.graphics.Texture
+import com.badlogic.gdx.graphics.g2d.TextureRegion
 import com.badlogic.gdx.graphics.g3d.Environment
 import com.badlogic.gdx.graphics.g3d.ModelBatch
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
@@ -14,6 +16,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Skin
 import com.badlogic.gdx.utils.viewport.ScreenViewport
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
 import com.badlogic.gdx.scenes.scene2d.InputEvent
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
 import com.kotcrab.vis.ui.VisUI
 import com.kotcrab.vis.ui.widget.VisTable
 import com.kotcrab.vis.ui.widget.VisTextButton
@@ -45,6 +48,8 @@ class GameScreen(
     private var solutionSteps: List<com.mycompany.myrubikscube.cube.Rotation> = emptyList()
     private var currentStepIndex: Int = 0
     private var isStepByStepSolving: Boolean = false
+
+    private lateinit var buttonTexture: Texture
 
     override fun show() {
         Gdx.app.logLevel = com.badlogic.gdx.Application.LOG_DEBUG
@@ -88,13 +93,20 @@ class GameScreen(
 
         val skin: Skin = VisUI.getSkin()
 
-        val buttonStyle = VisTextButton.VisTextButtonStyle(skin.get("default", VisTextButton.VisTextButtonStyle::class.java)).apply {
+        buttonTexture = Texture(Gdx.files.internal("button05.png"))
+        val buttonDrawable = TextureRegionDrawable(TextureRegion(buttonTexture))
+
+        val buttonStyle = VisTextButton.VisTextButtonStyle(
+            skin.get("default", VisTextButton.VisTextButtonStyle::class.java)
+        ).apply {
             font = skin.getFont("default-font")
-            up = skin.newDrawable("white", com.badlogic.gdx.graphics.Color.DARK_GRAY)
-            down = skin.newDrawable("white", com.badlogic.gdx.graphics.Color.GRAY)
-            over = skin.newDrawable("white", com.badlogic.gdx.graphics.Color.LIGHT_GRAY)
-            disabled = skin.newDrawable("white", com.badlogic.gdx.graphics.Color.DARK_GRAY)
+            up = buttonDrawable
+            down = buttonDrawable.tint(com.badlogic.gdx.graphics.Color.GRAY)
+            over = buttonDrawable.tint(com.badlogic.gdx.graphics.Color.LIGHT_GRAY)
+            disabled = buttonDrawable.tint(com.badlogic.gdx.graphics.Color.DARK_GRAY)
         }
+        buttonStyle.font.data.setScale(2f)
+
 
         undoButton = VisTextButton("Undo", buttonStyle).apply {
             addListener(object : ClickListener() {
@@ -195,6 +207,7 @@ class GameScreen(
         Gdx.app.log("GameScreen", "Disposing GameScreen resources.")
         batch.dispose()
         stage.dispose()
+        buttonTexture.dispose()
         if (VisUI.isLoaded()) VisUI.dispose()
     }
 

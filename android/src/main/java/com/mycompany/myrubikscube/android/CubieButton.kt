@@ -24,10 +24,8 @@ class CubieButton : AppCompatButton {
     }
 
     private fun init() {
-        // Set default appearance
         setBackgroundColor(context.getColor(R.color.gray))
         text = ""
-        // Accessibility
         contentDescription = "Face: ${face?.name}, Position: $position"
     }
 }

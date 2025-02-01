@@ -1,9 +1,13 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main_menu_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="true"
+    tools:context=".android.MainActivity">
 
     <com.google.android.exoplayer2.ui.PlayerView
         android:id="@+id/backgroundVideoView"
@@ -14,36 +18,132 @@
         app:resize_mode="fill"
         app:use_controller="false"
         android:clickable="false"
-    android:focusable="false" />
+        android:focusable="false" />
 
-    <!-- Overlay Buttons -->
+    <LinearLayout
+        android:id="@+id/bannerLayout"
+        android:layout_width="match_parent"
+        android:layout_height="99dp"
+        android:layout_gravity="top"
+        android:background="@drawable/mainpanel01"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/bannerTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="CubeIQ"
+            android:textColor="@android:color/white"
+            android:textSize="28sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/bannerSlogan"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="Play, Solve &amp; Scan with Ease"
+            android:textColor="@android:color/white"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/infoButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="top|start"
+        android:layout_margin="16dp"
+        android:background="@android:color/transparent"
+        android:contentDescription="@string/instruction"
+        android:src="@drawable/ic_info_2"
+        tools:src="@drawable/ic_info_2" />
+
     <LinearLayout
         android:id="@+id/buttons_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
+        android:layout_gravity="bottom"
+        android:background="@android:color/transparent"
         android:gravity="center"
-        android:layout_gravity="center"
-        android:padding="16dp"
-        android:background="@android:color/transparent">
+        android:orientation="horizontal"
+        android:paddingBottom="32dp"
+        android:paddingTop="16dp">
 
-        <Button
-            android:id="@+id/playGameButton"
+        <RelativeLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Play Game"
-            android:layout_marginBottom="16dp"
-            android:padding="16dp"
-            android:background="@drawable/button_background" />
+            android:layout_marginEnd="16dp">
 
-        <Button
-            android:id="@+id/scanCubeButton"
+            <ImageButton
+                android:id="@+id/playGameButton"
+                android:layout_width="179dp"
+                android:layout_height="72dp"
+                android:background="@android:color/transparent"
+                android:padding="10dp"
+                android:scaleType="fitXY"
+                android:src="@drawable/button05" />
+
+            <TextView
+                android:id="@+id/playGameText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:gravity="center"
+                android:text="Play Game"
+                android:textColor="@color/white"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </RelativeLayout>
+
+        <!-- Scan Cube Button -->
+        <RelativeLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Scan Cube"
-            android:padding="16dp"
-            android:background="@drawable/button_background" />
+            android:layout_marginStart="16dp">
+
+            <ImageButton
+                android:id="@+id/scanCubeButton"
+                android:layout_width="177dp"
+                android:layout_height="76dp"
+                android:background="@android:color/transparent"
+                android:padding="10dp"
+                android:scaleType="fitXY"
+                android:src="@drawable/button05" />
+
+            <TextView
+                android:id="@+id/scanCubeText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:gravity="center"
+                android:text="Scan Cube"
+                android:textColor="@color/white"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </RelativeLayout>
 
     </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/madeByContainer"
+        android:layout_width="170dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center"
+        android:layout_margin="16dp"
+        android:background="@drawable/titlepanel01"
+        android:padding="4dp">
+
+        <TextView
+            android:id="@+id/madeByText"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="Made by Zakaria Farih"
+            android:textColor="@android:color/white"
+            android:textSize="8sp"
+            android:textStyle="italic" />
+    </FrameLayout>
 
 </FrameLayout>

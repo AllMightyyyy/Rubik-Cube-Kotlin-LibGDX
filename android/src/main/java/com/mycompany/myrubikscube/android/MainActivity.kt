@@ -4,7 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
-import android.widget.Button
+import android.widget.ImageButton
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
@@ -15,8 +15,9 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var exoPlayer: ExoPlayer
     private lateinit var backgroundVideoView: PlayerView
-    private lateinit var playGameButton: Button
-    private lateinit var scanCubeButton: Button
+    private lateinit var playGameButton: ImageButton
+    private lateinit var scanCubeButton: ImageButton
+    private lateinit var infoButton: ImageButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,15 +35,16 @@ class MainActivity : AppCompatActivity() {
         backgroundVideoView = findViewById(R.id.backgroundVideoView)
         backgroundVideoView.player = exoPlayer
 
-        playGameButton = findViewById(R.id.playGameButton)
-        scanCubeButton = findViewById(R.id.scanCubeButton)
-
-        val videoUri = Uri.parse("android.resource://${packageName}/${R.raw.video_background}")
+        val videoUri = Uri.parse("android.resource://${packageName}/${R.raw.bg_video}")
         val mediaItem = MediaItem.fromUri(videoUri)
         exoPlayer.setMediaItem(mediaItem)
         exoPlayer.repeatMode = ExoPlayer.REPEAT_MODE_ALL
         exoPlayer.prepare()
         exoPlayer.play()
+
+        playGameButton = findViewById(R.id.playGameButton)
+        scanCubeButton = findViewById(R.id.scanCubeButton)
+        infoButton = findViewById(R.id.infoButton)
 
         playGameButton.setOnClickListener {
             val intent = Intent(this, AndroidLauncher::class.java)
@@ -52,6 +54,11 @@ class MainActivity : AppCompatActivity() {
         scanCubeButton.setOnClickListener {
             val intent = Intent(this, ColorInputActivity::class.java)
             startActivityForResult(intent, AndroidLauncher.REQUEST_CODE_SCAN)
+        }
+
+        infoButton.setOnClickListener {
+            val intent = Intent(this, InstructionsActivity::class.java)
+            startActivity(intent)
         }
     }
 
