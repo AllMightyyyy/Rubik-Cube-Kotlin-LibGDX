@@ -9,6 +9,7 @@
     android:fitsSystemWindows="true"
     tools:context=".android.MainActivity">
 
+    <!-- Background Video -->
     <com.google.android.exoplayer2.ui.PlayerView
         android:id="@+id/backgroundVideoView"
         android:layout_width="match_parent"
@@ -20,6 +21,7 @@
         android:clickable="false"
         android:focusable="false" />
 
+    <!-- Banner Layout -->
     <LinearLayout
         android:id="@+id/bannerLayout"
         android:layout_width="match_parent"
@@ -49,6 +51,7 @@
             android:textSize="16sp" />
     </LinearLayout>
 
+    <!-- Info Button -->
     <ImageButton
         android:id="@+id/infoButton"
         android:layout_width="48dp"
@@ -60,51 +63,89 @@
         android:src="@drawable/ic_info_2"
         tools:src="@drawable/ic_info_2" />
 
+    <!-- Buttons Layout (Stacked Vertically) -->
     <LinearLayout
         android:id="@+id/buttons_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:background="@android:color/transparent"
         android:gravity="center"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:paddingBottom="32dp"
         android:paddingTop="16dp">
 
-        <RelativeLayout
+        <!-- First Row: Play Game & Scan Cube -->
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp">
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
 
-            <ImageButton
-                android:id="@+id/playGameButton"
-                android:layout_width="179dp"
-                android:layout_height="72dp"
-                android:background="@android:color/transparent"
-                android:padding="10dp"
-                android:scaleType="fitXY"
-                android:src="@drawable/button05" />
-
-            <TextView
-                android:id="@+id/playGameText"
+            <!-- Play Game Button -->
+            <RelativeLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_centerInParent="true"
-                android:gravity="center"
-                android:text="Play Game"
-                android:textColor="@color/white"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-        </RelativeLayout>
+                android:layout_marginEnd="16dp">
 
-        <!-- Scan Cube Button -->
+                <ImageButton
+                    android:id="@+id/playGameButton"
+                    android:layout_width="179dp"
+                    android:layout_height="72dp"
+                    android:background="@android:color/transparent"
+                    android:padding="10dp"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/button05" />
+
+                <TextView
+                    android:id="@+id/playGameText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:gravity="center"
+                    android:text="Play Game"
+                    android:textColor="@color/white"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+            </RelativeLayout>
+
+            <!-- Scan Cube Button -->
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp">
+
+                <ImageButton
+                    android:id="@+id/scanCubeButton"
+                    android:layout_width="177dp"
+                    android:layout_height="76dp"
+                    android:background="@android:color/transparent"
+                    android:padding="10dp"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/button05" />
+
+                <TextView
+                    android:id="@+id/scanCubeText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:gravity="center"
+                    android:text="Scan Cube"
+                    android:textColor="@color/white"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+            </RelativeLayout>
+        </LinearLayout>
+
+        <!-- Second Row: Scan Activity Button (Centered Below Other Buttons) -->
         <RelativeLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp">
+            android:layout_gravity="center"
+            android:layout_marginTop="16dp">
 
             <ImageButton
-                android:id="@+id/scanCubeButton"
+                android:id="@+id/scanActivityButton"
                 android:layout_width="177dp"
                 android:layout_height="76dp"
                 android:background="@android:color/transparent"
@@ -113,12 +154,12 @@
                 android:src="@drawable/button05" />
 
             <TextView
-                android:id="@+id/scanCubeText"
+                android:id="@+id/scanActivityText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerInParent="true"
                 android:gravity="center"
-                android:text="Scan Cube"
+                android:text="Scan Activity"
                 android:textColor="@color/white"
                 android:textSize="18sp"
                 android:textStyle="bold" />
@@ -126,6 +167,7 @@
 
     </LinearLayout>
 
+    <!-- Made By Footer -->
     <FrameLayout
         android:id="@+id/madeByContainer"
         android:layout_width="170dp"

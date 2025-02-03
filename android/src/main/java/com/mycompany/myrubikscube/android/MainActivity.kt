@@ -17,6 +17,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var backgroundVideoView: PlayerView
     private lateinit var playGameButton: ImageButton
     private lateinit var scanCubeButton: ImageButton
+    private lateinit var scanActivityButton: ImageButton
     private lateinit var infoButton: ImageButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,6 +45,7 @@ class MainActivity : AppCompatActivity() {
 
         playGameButton = findViewById(R.id.playGameButton)
         scanCubeButton = findViewById(R.id.scanCubeButton)
+        scanActivityButton = findViewById(R.id.scanActivityButton)
         infoButton = findViewById(R.id.infoButton)
 
         playGameButton.setOnClickListener {
@@ -53,6 +55,11 @@ class MainActivity : AppCompatActivity() {
 
         scanCubeButton.setOnClickListener {
             val intent = Intent(this, ColorInputActivity::class.java)
+            startActivityForResult(intent, AndroidLauncher.REQUEST_CODE_SCAN)
+        }
+
+        scanActivityButton.setOnClickListener {
+            val intent = Intent(this, CubeScanActivity::class.java)
             startActivityForResult(intent, AndroidLauncher.REQUEST_CODE_SCAN)
         }
 
