@@ -25,6 +25,9 @@ class ColorInputActivity : AppCompatActivity() {
     private val cubieMap = HashMap<Face, Array<CubieButton>>()
     private val faceOrder = listOf(Face.UP, Face.RIGHT, Face.FRONT, Face.DOWN, Face.LEFT, Face.BACK)
 
+    // Add a variable to keep track of the face currently being scanned.
+    private var currentScanningFace: Face? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_color_input_net)
@@ -80,6 +83,7 @@ class ColorInputActivity : AppCompatActivity() {
                     setMargins(8, 8, 8, 8)
                 }
                 if (index == 4) {
+                    // Set predetermined center color according to the face.
                     colorOption = when(face) {
                         Face.UP -> ColorOption.WHITE
                         Face.RIGHT -> ColorOption.RED
@@ -89,7 +93,11 @@ class ColorInputActivity : AppCompatActivity() {
                         Face.BACK -> ColorOption.BLUE
                     }
                     setBackgroundColor(getColor(colorOption!!.colorResId))
-                    isClickable = false
+                    // Make the center clickable to trigger the scanner.
+                    isClickable = true
+                    setOnClickListener {
+                        launchFaceScanner(face)
+                    }
                 } else {
                     setBackgroundColor(getColor(R.color.gray))
                     setOnClickListener {
@@ -102,6 +110,60 @@ class ColorInputActivity : AppCompatActivity() {
 
         cubies.forEach { gridLayout.addView(it) }
         cubieMap[face] = cubies
+        checkGenerateButtonState()
+    }
+
+    private fun launchFaceScanner(face: Face) {
+        // Set the current scanning face so we know which face to update later.
+        currentScanningFace = face
+
+        // Launch FaceScanActivity for result.
+        // Pass the forced center color as extra. Here, we map the predetermined center color:
+        val forcedCenterChar = when(face) {
+            Face.UP -> 'U'
+            Face.RIGHT -> 'R'
+            Face.FRONT -> 'F'
+            Face.DOWN -> 'D'
+            Face.LEFT -> 'L'
+            Face.BACK -> 'B'
+        }
+        val intent = Intent(this, FaceScanActivity::class.java)
+        intent.putExtra("FORCE_CENTER", forcedCenterChar)
+        startActivityForResult(intent, FACE_SCAN_REQUEST_CODE)
+    }
+
+    companion object {
+        const val FACE_SCAN_REQUEST_CODE = 1001
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == FACE_SCAN_REQUEST_CODE && resultCode == RESULT_OK) {
+            val faceString = data?.getStringExtra("FACE_STRING")
+            if (faceString != null && faceString.length == 9) {
+                currentScanningFace?.let { face ->
+                    updateFaceWithScannedData(face, faceString)
+                } ?: run {
+                    Toast.makeText(this, "Unknown face scanned. Try again.", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                Toast.makeText(this, "Error scanning face. Try again.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    // Example function to update the UI for a given face:
+    private fun updateFaceWithScannedData(face: Face, faceString: String) {
+        val cubies = cubieMap[face] ?: return
+        // The faceString is in row-major order, 9 characters.
+        faceString.forEachIndexed { index, c ->
+            // Find the ColorOption corresponding to the character.
+            val colorOption = ColorOption.values().find { it.getChar() == c }
+            if (colorOption != null) {
+                cubies[index].setBackgroundColor(getColor(colorOption.colorResId))
+                cubies[index].colorOption = colorOption
+            }
+        }
         checkGenerateButtonState()
     }
 

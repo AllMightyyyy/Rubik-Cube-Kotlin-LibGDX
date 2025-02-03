@@ -48,7 +48,6 @@
         </activity>
         <activity android:name=".android.InstructionsActivity" />
 
-        <activity android:name=".android.CubeScanActivity" />
-
+        <activity android:name=".android.FaceScanActivity" />
     </application>
 </manifest>

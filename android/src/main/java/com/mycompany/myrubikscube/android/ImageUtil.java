@@ -37,7 +37,7 @@ public class ImageUtil {
         {186, 23, 47, 0},    // R
         {0, 61, 165, 0},     // B
     };
-    static final String[] colorLabel = {"Y", "O", "G", "W", "R", "B"};
+    static final String[] colorLabel = {"D", "L", "F", "U", "R", "B"};
     static final String[] colorName = {"Yellow", "Orange", "Green", "White", "Red", "Blue"};
     static final List<Integer> colorResponse = new ArrayList<>(Arrays.asList(0, 1, 2, 3, 4, 5));
     // top -> left -> down -> right
@@ -50,7 +50,6 @@ public class ImageUtil {
         "YOBR",  // Blue
     };
 
-    // Error Message
     static final String[] verifyMsg = {
         "There is not exactly one facelet of each color.",               // -1
         "Not all 12 edges exist exactly once.",                          // -2
@@ -64,14 +63,14 @@ public class ImageUtil {
         if (scannedCube.length() != 54) {
             throw new IllegalArgumentException("Cube string must be 54 characters.");
         }
-        // The scanned string uses indices:
+        // scanned string uses indices
         //   0 = Yellow, 1 = Orange, 2 = Green, 3 = White, 4 = Red, 5 = Blue.
-        String face0 = scannedCube.substring(0, 9);   // Yellow → should become Down (D)
-        String face1 = scannedCube.substring(9, 18);   // Orange → should become Left (L)
-        String face2 = scannedCube.substring(18, 27);  // Green → should become Front (F)
-        String face3 = scannedCube.substring(27, 36);  // White → should become Up (U)
-        String face4 = scannedCube.substring(36, 45);  // Red → remains Right (R)
-        String face5 = scannedCube.substring(45, 54);  // Blue → remains Back (B)
+        String face0 = scannedCube.substring(0, 9);   // Yellow →  become Down (D)
+        String face1 = scannedCube.substring(9, 18);   // Orange →  become Left (L)
+        String face2 = scannedCube.substring(18, 27);  // Green →  become Front (F)
+        String face3 = scannedCube.substring(27, 36);  // White →  become Up (U)
+        String face4 = scannedCube.substring(36, 45);  // Red →  Right (R)
+        String face5 = scannedCube.substring(45, 54);  // Blue →  Back (B)
 
         // Remap the letters for each face.
         face0 = mapFaceLetters(face0, 'Y', 'D');  // yellow (Y) becomes D (Down)
@@ -89,8 +88,6 @@ public class ImageUtil {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < face.length(); i++) {
             char c = face.charAt(i);
-            // Replace the expected letter with the target letter.
-            // (You could also include additional logic if needed.)
             sb.append(c == expected ? target : c);
         }
         return sb.toString();
@@ -131,8 +128,6 @@ public class ImageUtil {
     }
 
     static public Mat getMatFromImage(ImageProxy image) {
-        /* Create cv::mat(RGB888) from image(NV21) */
-        /* https://stackoverflow.com/questions/30510928/convert-android-camera2-api-yuv-420-888-to-rgb */
         if (image.getFormat() == ImageFormat.YUV_420_888) {
             ByteBuffer yBuffer = image.getPlanes()[0].getBuffer();
             ByteBuffer uBuffer = image.getPlanes()[1].getBuffer();
@@ -169,7 +164,6 @@ public class ImageUtil {
         String baseUrl = "https://ruwix.com/widget/3d/?";
         String url = baseUrl + String.format("label=%s", "RubikCubeSolver");
         url += String.format("&alg=%s", Uri.encode(solution));
-        // url += String.format("&colored=%s" , "*");
         url += String.format("&hover=%s" , "4");
         url += String.format("&speed=%s" , "1000");
         url += String.format("&flags=%s" , "showalg");
