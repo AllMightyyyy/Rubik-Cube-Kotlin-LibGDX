@@ -12,7 +12,6 @@ class CubeApp(
 
     override fun create() {
         gameScreen = GameScreen(this, initialCubeString)
-
         setScreen(gameScreen)
     }
 

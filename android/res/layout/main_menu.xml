@@ -142,28 +142,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:layout_marginTop="16dp">
-
-            <ImageButton
-                android:id="@+id/scanActivityButton"
-                android:layout_width="177dp"
-                android:layout_height="76dp"
-                android:background="@android:color/transparent"
-                android:padding="10dp"
-                android:scaleType="fitXY"
-                android:src="@drawable/button05" />
-
-            <TextView
-                android:id="@+id/scanActivityText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerInParent="true"
-                android:gravity="center"
-                android:text="Scan Activity"
-                android:textColor="@color/white"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-        </RelativeLayout>
+            android:layout_marginTop="16dp"/>
 
     </LinearLayout>
 

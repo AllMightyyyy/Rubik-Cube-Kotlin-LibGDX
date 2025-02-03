@@ -31,7 +31,7 @@
             android:textColor="@android:color/black"
             android:textSize="16sp"
             android:lineSpacingExtra="4dp"
-            android:text="@string/welcome_to_my_rubik_s_cube_app_there_are_two_main_modes_1_play_game_a_virtual_rubik_s_cube_is_rendered_on_your_screen_you_can_interact_with_the_cube_by_rotating_it_use_the_undo_and_redo_features_to_correct_your_moves_once_the_cube_is_scrambled_press_the_solve_button_to_see_a_step_by_step_solution_that_will_guide_you_through_solving_the_cube_2_scan_cube_you_will_be_presented_with_a_t_shaped_layout_of_a_rubik_s_cube_net_each_face_of_the_cube_is_represented_on_the_screen_the_centers_are_pre_assigned_up_white_left_orange_front_green_right_red_back_blue_and_down_yellow_assign_the_remaining_colors_by_tapping_on_each_square_the_layout_is_scrollable_if_needed_once_all_colors_are_set_correctly_you_can_generate_a_cube_string_to_solve_the_cube_use_the_info_icon_located_at_the_top_left_of_the_main_menu_to_open_these_instructions_anytime_enjoy_and_happy_cubing"
+            android:text="@string/welcomeInstructions"
             android:paddingBottom="16dp" />
 
         <Button

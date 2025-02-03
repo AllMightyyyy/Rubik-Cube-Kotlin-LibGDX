@@ -10,20 +10,24 @@ import com.badlogic.gdx.graphics.g3d.Environment
 import com.badlogic.gdx.graphics.g3d.ModelBatch
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
-import com.badlogic.gdx.graphics.g3d.utils.CameraInputController
+import com.badlogic.gdx.graphics.g2d.TextureAtlas
+import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.scenes.scene2d.Stage
+import com.badlogic.gdx.scenes.scene2d.ui.Table
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton
 import com.badlogic.gdx.scenes.scene2d.ui.Skin
-import com.badlogic.gdx.utils.viewport.ScreenViewport
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
 import com.badlogic.gdx.scenes.scene2d.InputEvent
-import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
-import com.kotcrab.vis.ui.VisUI
-import com.kotcrab.vis.ui.widget.VisTable
-import com.kotcrab.vis.ui.widget.VisTextButton
-import com.mycompany.myrubikscube.cube.Cube
+import com.badlogic.gdx.utils.viewport.ScreenViewport
+import com.badlogic.gdx.InputMultiplexer
+import com.badlogic.gdx.graphics.g3d.utils.CameraInputController
+import com.badlogic.gdx.graphics.Color
+import com.badlogic.gdx.graphics.g3d.ModelInstance
 import com.mycompany.myrubikscube.cube.CubeListener
 import com.mycompany.myrubikscube.cube.RubiksCube3x3x3
 import com.mycompany.myrubikscube.cs.min2phase.Search
+import com.mycompany.myrubikscube.cube.Cube
 import com.mycompany.myrubikscube.cube.RubiksCube
 
 class GameScreen(
@@ -38,32 +42,47 @@ class GameScreen(
     private lateinit var cameraController: CameraInputController
     private lateinit var stage: Stage
 
-    private lateinit var solveStepByStepButton: VisTextButton
-    private lateinit var nextStepButton: VisTextButton
-    private lateinit var prevStepButton: VisTextButton
-    private lateinit var undoButton: VisTextButton
-    private lateinit var redoButton: VisTextButton
-    private lateinit var mainMenuButton: VisTextButton
+    // UI buttons
+    private lateinit var solveStepByStepButton: TextButton
+    private lateinit var nextStepButton: TextButton
+    private lateinit var prevStepButton: TextButton
+    private lateinit var undoButton: TextButton
+    private lateinit var redoButton: TextButton
+    private lateinit var mainMenuButton: TextButton
 
     private var solutionSteps: List<com.mycompany.myrubikscube.cube.Rotation> = emptyList()
     private var currentStepIndex: Int = 0
     private var isStepByStepSolving: Boolean = false
 
+    // Extra texture if needed (for example, for alternative button backgrounds)
     private lateinit var buttonTexture: Texture
+
+    // Load your Neon UI skin from assets once.
+    // (Make sure that neon-ui/neon-ui.json and neon-ui/neon-ui.atlas use high-res assets and fonts.)
+    private val neonSkin: Skin = Skin(
+        Gdx.files.internal("neon-ui/neon-ui.json"),
+        TextureAtlas(Gdx.files.internal("neon-ui/neon-ui.atlas"))
+    )
+
+    // (Optional) Load a background image for the UI
+    private val backgroundTexture: Texture = Texture(Gdx.files.internal("neon-ui/neon-bg.jpg"))
+
+    // Create a SpriteBatch dedicated for drawing the background image.
+    private val backgroundBatch = SpriteBatch()
 
     override fun show() {
         Gdx.app.logLevel = com.badlogic.gdx.Application.LOG_DEBUG
 
         Search.init()
-
         batch = ModelBatch()
         env = Environment().apply {
             set(ColorAttribute(ColorAttribute.AmbientLight, 0.6f, 0.6f, 0.6f, 1f))
             add(DirectionalLight().set(0.8f, 0.8f, 0.8f, -1f, -0.8f, -0.2f))
         }
 
+        // Set up the camera so that the cube and UI don’t compete for center stage.
         camera = PerspectiveCamera(67f, Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat())
-        camera.position.set(10f, 10f, 10f)
+        camera.position.set(12f, 12f, 12f)  // adjust to your liking
         camera.lookAt(0f, 0f, 0f)
         camera.near = 1f
         camera.far = 300f
@@ -81,49 +100,49 @@ class GameScreen(
             onCubeScanned(scannedCubeString)
         }
 
-        if (!VisUI.isLoaded()) {
-            VisUI.load()
-        }
+        // Create the UI stage with a ScreenViewport
         stage = Stage(ScreenViewport())
 
-        val rootTable = VisTable(true)
+        // Do NOT add the background image as a stage actor,
+        // since it will be drawn separately with backgroundBatch.
+        // The stage will contain only the UI (buttons, tables, etc.)
+
+        // Create a root table to layout the UI.
+        val rootTable = Table()
         rootTable.setFillParent(true)
         rootTable.top().padTop(60f).padLeft(30f).padRight(30f)
         stage.addActor(rootTable)
 
-        val skin: Skin = VisUI.getSkin()
+        // Use a high-resolution font from your skin.
+        // (If your skin’s default font is too small, consider generating a new BitmapFont via FreeType.)
+        val buttonStyle: TextButton.TextButtonStyle =
+            neonSkin.get("default", TextButton.TextButtonStyle::class.java).apply {
+                fontColor = Color.WHITE
+            }
 
+        // Optionally, if you want to combine an external texture (e.g. button05.png)
+        // with your skin’s style, create a drawable from it:
         buttonTexture = Texture(Gdx.files.internal("button05.png"))
         val buttonDrawable = TextureRegionDrawable(TextureRegion(buttonTexture))
+        // You could assign this drawable to your style's "up" state if desired.
+        // e.g.: buttonStyle.up = buttonDrawable
 
-        val buttonStyle = VisTextButton.VisTextButtonStyle(
-            skin.get("default", VisTextButton.VisTextButtonStyle::class.java)
-        ).apply {
-            font = skin.getFont("default-font")
-            up = buttonDrawable
-            down = buttonDrawable.tint(com.badlogic.gdx.graphics.Color.GRAY)
-            over = buttonDrawable.tint(com.badlogic.gdx.graphics.Color.LIGHT_GRAY)
-            disabled = buttonDrawable.tint(com.badlogic.gdx.graphics.Color.DARK_GRAY)
-        }
-        buttonStyle.font.data.setScale(2f)
-
-
-        undoButton = VisTextButton("Undo", buttonStyle).apply {
+        // Create buttons with the neon skin style
+        undoButton = TextButton("Undo", buttonStyle).apply {
             addListener(object : ClickListener() {
                 override fun clicked(event: InputEvent?, x: Float, y: Float) {
                     cube.undo()
                 }
             })
         }
-        redoButton = VisTextButton("Redo", buttonStyle).apply {
+        redoButton = TextButton("Redo", buttonStyle).apply {
             addListener(object : ClickListener() {
                 override fun clicked(event: InputEvent?, x: Float, y: Float) {
                     cube.redo()
                 }
             })
         }
-
-        solveStepByStepButton = VisTextButton("Solve Step by Step", buttonStyle).apply {
+        solveStepByStepButton = TextButton("Solve Step by Step", buttonStyle).apply {
             isDisabled = false
             addListener(object : ClickListener() {
                 override fun clicked(event: InputEvent?, x: Float, y: Float) {
@@ -133,7 +152,7 @@ class GameScreen(
                 }
             })
         }
-        nextStepButton = VisTextButton("Next", buttonStyle).apply {
+        nextStepButton = TextButton("Next", buttonStyle).apply {
             isVisible = false
             addListener(object : ClickListener() {
                 override fun clicked(event: InputEvent?, x: Float, y: Float) {
@@ -141,7 +160,7 @@ class GameScreen(
                 }
             })
         }
-        prevStepButton = VisTextButton("Previous", buttonStyle).apply {
+        prevStepButton = TextButton("Previous", buttonStyle).apply {
             isVisible = false
             addListener(object : ClickListener() {
                 override fun clicked(event: InputEvent?, x: Float, y: Float) {
@@ -149,7 +168,7 @@ class GameScreen(
                 }
             })
         }
-        mainMenuButton = VisTextButton("Main Menu", buttonStyle).apply {
+        mainMenuButton = TextButton("Main Menu", buttonStyle).apply {
             addListener(object : ClickListener() {
                 override fun clicked(event: InputEvent?, x: Float, y: Float) {
                     game.platformBridge?.handleMainMenu()
@@ -157,6 +176,7 @@ class GameScreen(
             })
         }
 
+        // Layout the buttons in the table with extra padding and spacing.
         rootTable.add(undoButton).width(240f).height(100f).pad(10f)
         rootTable.add(redoButton).width(240f).height(100f).pad(10f)
         rootTable.row()
@@ -167,21 +187,35 @@ class GameScreen(
         rootTable.row()
         rootTable.add(mainMenuButton).colspan(2).width(500f).height(100f).pad(10f)
 
-        val multiplexer = com.badlogic.gdx.InputMultiplexer(stage, InputHandler(cube, camera), cameraController)
+        // Combine input processors: UI stage, cube input, and camera controller.
+        val multiplexer = InputMultiplexer(stage, InputHandler(cube, camera), cameraController)
         Gdx.input.inputProcessor = multiplexer
     }
 
     override fun render(delta: Float) {
-        Gdx.gl.glViewport(0, 0, Gdx.graphics.width, Gdx.graphics.height)
+        // Clear the screen with a clear color that complements your neon style.
+        Gdx.gl.glClearColor(0.1f, 0.1f, 0.15f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)
 
+        // --- Draw the background image first using backgroundBatch ---
+        backgroundBatch.begin()
+        backgroundBatch.draw(
+            backgroundTexture,
+            0f,
+            0f,
+            Gdx.graphics.width.toFloat(),
+            Gdx.graphics.height.toFloat()
+        )
+        backgroundBatch.end()
+
+        // --- Draw the 3D cube ---
         cameraController.update()
         batch.begin(camera)
         cube.draw()
         batch.end()
-
         cube.onNextFrame()
 
+        // --- Draw the UI stage on top ---
         stage.act(delta)
         stage.draw()
     }
@@ -195,20 +229,21 @@ class GameScreen(
 
     override fun pause() {}
     override fun resume() {}
-
     override fun hide() {
-        Gdx.app.log("GameScreen", "Hiding GameScreen, stopping input and animations.")
+        Gdx.app.log("GameScreen", "Hiding GameScreen")
         cube.cancelSolving()
         cube.setState(RubiksCube.CubeState.IDLE)
         Gdx.input.inputProcessor = null
     }
 
     override fun dispose() {
-        Gdx.app.log("GameScreen", "Disposing GameScreen resources.")
+        Gdx.app.log("GameScreen", "Disposing GameScreen resources")
         batch.dispose()
         stage.dispose()
+        backgroundBatch.dispose()
         buttonTexture.dispose()
-        if (VisUI.isLoaded()) VisUI.dispose()
+        backgroundTexture.dispose()
+        // Do not dispose neonSkin if it is shared between screens.
     }
 
     /**
@@ -247,37 +282,31 @@ class GameScreen(
         for (i in 0 until 9) {
             val c = scannedColors[i]
             cube.mTopSquares[i].color = charToColor[c] ?: Cube.COLOR_GRAY
-            Gdx.app.log("GameScreen", "Top square $i set to ${cube.mTopSquares[i].colorName()}")
         }
         for (i in 0 until 9) {
             val c = scannedColors[9 + i]
             cube.mRightSquares[i].color = charToColor[c] ?: Cube.COLOR_GRAY
-            Gdx.app.log("GameScreen", "Right square $i set to ${cube.mRightSquares[i].colorName()}")
         }
         for (i in 0 until 9) {
             val c = scannedColors[18 + i]
             cube.mFrontSquares[i].color = charToColor[c] ?: Cube.COLOR_GRAY
-            Gdx.app.log("GameScreen", "Front square $i set to ${cube.mFrontSquares[i].colorName()}")
         }
         for (i in 0 until 9) {
             val c = scannedColors[27 + i]
             cube.mBottomSquares[i].color = charToColor[c] ?: Cube.COLOR_GRAY
-            Gdx.app.log("GameScreen", "Bottom square $i set to ${cube.mBottomSquares[i].colorName()}")
         }
         for (i in 0 until 9) {
             val c = scannedColors[36 + i]
             cube.mLeftSquares[i].color = charToColor[c] ?: Cube.COLOR_GRAY
-            Gdx.app.log("GameScreen", "Left square $i set to ${cube.mLeftSquares[i].colorName()}")
         }
         for (i in 0 until 9) {
             val c = scannedColors[45 + i]
             cube.mBackSquares[i].color = charToColor[c] ?: Cube.COLOR_GRAY
-            Gdx.app.log("GameScreen", "Back square $i set to ${cube.mBackSquares[i].colorName()}")
         }
     }
 
     /**
-     * Renderer class to draw each square of the cube.
+     * Inner renderer class for drawing cube squares.
      */
     inner class Renderer : com.mycompany.myrubikscube.graphics.CubeRenderer {
         override fun drawSquare(square: com.mycompany.myrubikscube.cube.Square) {
@@ -294,7 +323,6 @@ class GameScreen(
             batch.render(square.modelInstance, env)
         }
     }
-
 
     private fun startStepByStepSolving() {
         if (isStepByStepSolving) return
@@ -353,7 +381,6 @@ class GameScreen(
                 cube.setStepByStepSolving(false)
                 nextStepButton.isVisible = false
                 prevStepButton.isVisible = false
-                cube.setState(RubiksCube.CubeState.IDLE)
                 Gdx.app.postRunnable { solveStepByStepButton.isDisabled = false }
             }
         }
@@ -397,7 +424,6 @@ class GameScreen(
         Gdx.app.log("GameScreen", message)
         game.platformBridge?.showMessage(message)
     }
-
 
     override fun handleRotationCompleted() { }
     override fun handleCubeMessage(msg: String) { sendMessage(msg) }

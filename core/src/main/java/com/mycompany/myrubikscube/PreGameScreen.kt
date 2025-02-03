@@ -6,15 +6,15 @@ import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.scenes.scene2d.Stage
-import com.badlogic.gdx.scenes.scene2d.ui.*
-import com.badlogic.gdx.utils.viewport.ScreenViewport
+import com.badlogic.gdx.scenes.scene2d.ui.Table
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton
+import com.badlogic.gdx.scenes.scene2d.ui.Skin
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
 import com.badlogic.gdx.scenes.scene2d.InputEvent
+import com.badlogic.gdx.utils.viewport.ScreenViewport
+import com.badlogic.gdx.graphics.g2d.TextureAtlas
 import com.badlogic.gdx.video.VideoPlayer
 import com.badlogic.gdx.video.VideoPlayerCreator
-import com.kotcrab.vis.ui.VisUI
-import com.kotcrab.vis.ui.widget.VisTextButton
-import com.mycompany.myrubikscube.CubeApp
 
 class PreGameScreen(private val game: CubeApp) : Screen {
 
@@ -23,20 +23,21 @@ class PreGameScreen(private val game: CubeApp) : Screen {
     private var videoTexture: Texture? = null
     private var videoLoaded = false
 
-    init {
-        if (!VisUI.isLoaded()) {
-            VisUI.load()
-        }
+    // ← Load your Neon UI skin from assets (adjust the path as needed)
+    private val neonSkin: Skin = Skin(
+        Gdx.files.internal("neon-ui/neon-ui.json"),
+        TextureAtlas(Gdx.files.internal("neon-ui/neon-ui.atlas"))
+    )
 
+    init {
+        // Set the input processor to the stage
         Gdx.input.inputProcessor = stage
 
+        // Initialize and load the video player
         try {
-            // ✅ Initialize the Video Player Correctly
             videoPlayer = VideoPlayerCreator.createVideoPlayer()
-            videoPlayer?.setLooping(true) // Loop the video
-
-            // Load and play the video
-            val videoFile = Gdx.files.internal("video/background.mp4") // Change to .mp4 if .webm fails
+            videoPlayer?.setLooping(true)
+            val videoFile = Gdx.files.internal("video/background.mp4") // adjust extension if needed
             if (videoPlayer?.load(videoFile) == true) {
                 videoTexture = videoPlayer?.texture
                 videoLoaded = true
@@ -49,18 +50,20 @@ class PreGameScreen(private val game: CubeApp) : Screen {
             Gdx.app.error("PreGameScreen", "Error initializing video player: ${e.message}")
         }
 
+        // Create a root table to layout your UI components
         val rootTable = Table()
         rootTable.setFillParent(true)
         stage.addActor(rootTable)
 
-        // Transparent background for buttons
+        // Default padding for components (customize as needed)
         rootTable.defaults().pad(15f).center()
 
-        // Create custom button style using VisUI skin
+        // Create a custom button style if you want to tweak things,
+        // or simply use the style defined in your neon skin.
         val buttonStyle = createCustomButtonStyle()
 
-        // Play Game Button
-        val playButton = VisTextButton("▶ Play Game", buttonStyle).apply {
+        // Create Play Game and Scan Cube buttons
+        val playButton = TextButton("▶ Play Game", buttonStyle).apply {
             pad(10f)
             addListener(object : ClickListener() {
                 override fun clicked(event: InputEvent?, x: Float, y: Float) {
@@ -69,8 +72,7 @@ class PreGameScreen(private val game: CubeApp) : Screen {
             })
         }
 
-        // Scan Cube Button
-        val scanButton = VisTextButton("📸 Scan Cube", buttonStyle).apply {
+        val scanButton = TextButton("📸 Scan Cube", buttonStyle).apply {
             pad(10f)
             addListener(object : ClickListener() {
                 override fun clicked(event: InputEvent?, x: Float, y: Float) {
@@ -79,23 +81,21 @@ class PreGameScreen(private val game: CubeApp) : Screen {
             })
         }
 
-        // Add Buttons to Table (Center Align)
+        // Add buttons to the table
         rootTable.add(playButton).width(280f).height(80f).row()
         rootTable.add(scanButton).width(280f).height(80f).padTop(20f)
     }
 
     override fun show() {
-        Gdx.app.log("PreGameScreen", "Showing PreGameScreen, resetting input processor.")
+        Gdx.app.log("PreGameScreen", "Showing PreGameScreen")
         Gdx.input.inputProcessor = stage
     }
 
     override fun render(delta: Float) {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
-        // ✅ Update Video Player Before Rendering
+        // Update and render the video background
         videoPlayer?.update()
-
-        // ✅ Render the Video Background
         val batch = stage.batch
         batch.begin()
         videoTexture?.let {
@@ -103,7 +103,7 @@ class PreGameScreen(private val game: CubeApp) : Screen {
         }
         batch.end()
 
-        // Draw UI
+        // Render UI stage
         stage.act(delta)
         stage.draw()
     }
@@ -113,28 +113,27 @@ class PreGameScreen(private val game: CubeApp) : Screen {
     }
 
     override fun pause() {}
-
     override fun resume() {}
-
     override fun hide() {
-        videoPlayer?.stop() // Stop the video when leaving this screen
+        videoPlayer?.stop() // Stop video when leaving the screen
     }
 
     override fun dispose() {
         stage.dispose()
         videoPlayer?.dispose()
-        if (VisUI.isLoaded()) VisUI.dispose()
+        // No need to dispose neonSkin here if you plan to reuse it across screens
     }
 
-    // Function to create a custom VisUI button style
-    private fun createCustomButtonStyle(): VisTextButton.VisTextButtonStyle {
-        val skin = VisUI.getSkin()
-        return VisTextButton.VisTextButtonStyle().apply {
-            up = skin.getDrawable("button") // Default button
-            down = skin.getDrawable("button-down") // Pressed effect
-            over = skin.getDrawable("button-over") // Hover effect
-            font = skin.getFont("default-font") // ✅ Use VisUI default font
-            fontColor = Color.WHITE // Set text color
+    // Example: Create a custom button style that uses drawables from your neon skin.
+    // You can also simply use neonSkin.get("default", TextButton.TextButtonStyle::class.java)
+    private fun createCustomButtonStyle(): TextButton.TextButtonStyle {
+        return TextButton.TextButtonStyle().apply {
+            // Assuming your neon skin defines drawables with these names:
+            up = neonSkin.getDrawable("button")
+            down = neonSkin.getDrawable("button-down")
+            over = neonSkin.getDrawable("button-over")
+            font = neonSkin.getFont("default-font")
+            fontColor = Color.WHITE
         }
     }
 }

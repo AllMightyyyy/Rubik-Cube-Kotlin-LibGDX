@@ -1,38 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/scrollView"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
+    android:background="@color/white"
     android:padding="16dp">
 
     <LinearLayout
+        android:id="@+id/linearContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
+        <!-- Header -->
         <TextView
             android:id="@+id/headerTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Assign Cube Colors"
-            android:textSize="24sp"
+            android:textSize="28sp"
             android:textStyle="bold"
-            android:gravity="center" />
+            android:textColor="@color/black"
+            android:gravity="center"
+            android:padding="8dp" />
 
+        <!-- UP Face Container -->
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:id="@+id/containerUp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_gravity="center"
-            android:layout_marginTop="16dp">
+            android:gravity="center"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/rounded_background">
             <TextView
                 android:id="@+id/labelUp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Up"
+                android:textSize="20sp"
                 android:textStyle="bold"
-                android:gravity="center" />
+                android:textColor="@color/black"
+                android:gravity="center"
+                android:padding="4dp"/>
             <GridLayout
                 android:id="@+id/gridUp"
                 android:layout_width="wrap_content"
@@ -42,27 +54,36 @@
                 android:layout_marginTop="8dp" />
         </LinearLayout>
 
+        <!-- Middle Faces (Left, Front, Right, Back) in a HorizontalScrollView -->
         <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp">
             <LinearLayout
+                android:id="@+id/middleFacesContainer"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
+                <!-- LEFT Face -->
                 <LinearLayout
+                    android:id="@+id/containerLeft"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:layout_marginEnd="8dp">
+                    android:layout_marginEnd="8dp"
+                    android:gravity="center"
+                    android:background="@drawable/rounded_background">
                     <TextView
                         android:id="@+id/labelLeft"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Left"
+                        android:textSize="20sp"
                         android:textStyle="bold"
-                        android:gravity="center" />
+                        android:textColor="@color/black"
+                        android:gravity="center"
+                        android:padding="4dp"/>
                     <GridLayout
                         android:id="@+id/gridLeft"
                         android:layout_width="wrap_content"
@@ -72,18 +93,25 @@
                         android:layout_marginTop="8dp" />
                 </LinearLayout>
 
+                <!-- FRONT Face -->
                 <LinearLayout
+                    android:id="@+id/containerFront"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:layout_marginEnd="8dp">
+                    android:layout_marginEnd="8dp"
+                    android:gravity="center"
+                    android:background="@drawable/rounded_background">
                     <TextView
                         android:id="@+id/labelFront"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Front"
+                        android:textSize="20sp"
                         android:textStyle="bold"
-                        android:gravity="center" />
+                        android:textColor="@color/black"
+                        android:gravity="center"
+                        android:padding="4dp"/>
                     <GridLayout
                         android:id="@+id/gridFront"
                         android:layout_width="wrap_content"
@@ -93,18 +121,25 @@
                         android:layout_marginTop="8dp" />
                 </LinearLayout>
 
+                <!-- RIGHT Face -->
                 <LinearLayout
+                    android:id="@+id/containerRight"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:layout_marginEnd="8dp">
+                    android:layout_marginEnd="8dp"
+                    android:gravity="center"
+                    android:background="@drawable/rounded_background">
                     <TextView
                         android:id="@+id/labelRight"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Right"
+                        android:textSize="20sp"
                         android:textStyle="bold"
-                        android:gravity="center" />
+                        android:textColor="@color/black"
+                        android:gravity="center"
+                        android:padding="4dp"/>
                     <GridLayout
                         android:id="@+id/gridRight"
                         android:layout_width="wrap_content"
@@ -114,17 +149,24 @@
                         android:layout_marginTop="8dp" />
                 </LinearLayout>
 
+                <!-- BACK Face -->
                 <LinearLayout
+                    android:id="@+id/containerBack"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="@drawable/rounded_background">
                     <TextView
                         android:id="@+id/labelBack"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Back"
+                        android:textSize="20sp"
                         android:textStyle="bold"
-                        android:gravity="center" />
+                        android:textColor="@color/black"
+                        android:gravity="center"
+                        android:padding="4dp"/>
                     <GridLayout
                         android:id="@+id/gridBack"
                         android:layout_width="wrap_content"
@@ -136,19 +178,25 @@
             </LinearLayout>
         </HorizontalScrollView>
 
+        <!-- DOWN Face Container -->
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:id="@+id/containerDown"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_gravity="center"
-            android:layout_marginTop="16dp">
+            android:gravity="center"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/rounded_background">
             <TextView
                 android:id="@+id/labelDown"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Down"
+                android:textSize="20sp"
                 android:textStyle="bold"
-                android:gravity="center" />
+                android:textColor="@color/black"
+                android:gravity="center"
+                android:padding="4dp"/>
             <GridLayout
                 android:id="@+id/gridDown"
                 android:layout_width="wrap_content"
@@ -158,22 +206,28 @@
                 android:layout_marginTop="8dp" />
         </LinearLayout>
 
+        <!-- Generate Button -->
         <Button
             android:id="@+id/generateSolveButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Generate and Solve"
-            android:layout_marginTop="16dp" />
+            android:textSize="18sp"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="@color/colorPrimary"
+            android:textColor="@android:color/white" />
 
+        <!-- Debug Cube String -->
         <TextView
             android:id="@+id/debugCubeStringTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/cube_string_not_generated_yet"
-            android:background="@android:color/darker_gray"
+            android:background="@color/darker_gray"
             android:textColor="@android:color/white"
             android:padding="8dp"
             android:gravity="center"
             android:layout_marginTop="16dp" />
+
     </LinearLayout>
 </ScrollView>

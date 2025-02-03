@@ -25,7 +25,7 @@ class ColorInputActivity : AppCompatActivity() {
     private val cubieMap = HashMap<Face, Array<CubieButton>>()
     private val faceOrder = listOf(Face.UP, Face.RIGHT, Face.FRONT, Face.DOWN, Face.LEFT, Face.BACK)
 
-    // Add a variable to keep track of the face currently being scanned.
+    // Track the face currently being scanned.
     private var currentScanningFace: Face? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,6 +42,7 @@ class ColorInputActivity : AppCompatActivity() {
         generateSolveButton = findViewById(R.id.generateSolveButton)
         debugCubeStringTextView = findViewById(R.id.debugCubeStringTextView)
 
+        // Initialize each face’s grid with 9 CubieButtons.
         initializeFace(Face.UP, gridUp)
         initializeFace(Face.RIGHT, gridRight)
         initializeFace(Face.FRONT, gridFront)
@@ -63,15 +64,12 @@ class ColorInputActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Initializes a GridLayout for a given face by creating 9 CubieButtons.
-     * In this approach, every face is shown and the centers are editable.
-     */
     private fun initializeFace(face: Face, gridLayout: GridLayout) {
         gridLayout.removeAllViews()
 
         val cubies = Array(9) { index ->
             CubieButton(this, face, index).apply {
+                // Use a fixed size (in dp) with proper density conversion.
                 val sizeInDp = 80
                 val scale = resources.displayMetrics.density
                 val sizeInPx = (sizeInDp * scale + 0.5f).toInt()
@@ -83,7 +81,7 @@ class ColorInputActivity : AppCompatActivity() {
                     setMargins(8, 8, 8, 8)
                 }
                 if (index == 4) {
-                    // Set predetermined center color according to the face.
+                    // Set predetermined center color based on face.
                     colorOption = when(face) {
                         Face.UP -> ColorOption.WHITE
                         Face.RIGHT -> ColorOption.RED
@@ -93,7 +91,7 @@ class ColorInputActivity : AppCompatActivity() {
                         Face.BACK -> ColorOption.BLUE
                     }
                     setBackgroundColor(getColor(colorOption!!.colorResId))
-                    // Make the center clickable to trigger the scanner.
+                    // Make center clickable to trigger the scanner.
                     isClickable = true
                     setOnClickListener {
                         launchFaceScanner(face)
@@ -107,18 +105,13 @@ class ColorInputActivity : AppCompatActivity() {
                 contentDescription = "Face: ${face.name}, Position: $index"
             }
         }
-
         cubies.forEach { gridLayout.addView(it) }
         cubieMap[face] = cubies
         checkGenerateButtonState()
     }
 
     private fun launchFaceScanner(face: Face) {
-        // Set the current scanning face so we know which face to update later.
         currentScanningFace = face
-
-        // Launch FaceScanActivity for result.
-        // Pass the forced center color as extra. Here, we map the predetermined center color:
         val forcedCenterChar = when(face) {
             Face.UP -> 'U'
             Face.RIGHT -> 'R'
@@ -152,12 +145,9 @@ class ColorInputActivity : AppCompatActivity() {
         }
     }
 
-    // Example function to update the UI for a given face:
     private fun updateFaceWithScannedData(face: Face, faceString: String) {
         val cubies = cubieMap[face] ?: return
-        // The faceString is in row-major order, 9 characters.
         faceString.forEachIndexed { index, c ->
-            // Find the ColorOption corresponding to the character.
             val colorOption = ColorOption.values().find { it.getChar() == c }
             if (colorOption != null) {
                 cubies[index].setBackgroundColor(getColor(colorOption.colorResId))
@@ -167,9 +157,6 @@ class ColorInputActivity : AppCompatActivity() {
         checkGenerateButtonState()
     }
 
-    /**
-     * Displays a ColorPickerDialog when a cubie is tapped.
-     */
     private fun showColorPicker(cubieButton: CubieButton) {
         val colorPicker = ColorPickerDialog(this, object : ColorPickerDialog.OnColorSelectedListener {
             override fun onColorSelected(colorOption: ColorOption) {
@@ -182,9 +169,6 @@ class ColorInputActivity : AppCompatActivity() {
         colorPicker.show()
     }
 
-    /**
-     * Generates a 54-character cube string in the order U, R, F, D, L, B.
-     */
     private fun generateCubeString(): String {
         val sb = StringBuilder()
         for (face in faceOrder) {
@@ -207,9 +191,6 @@ class ColorInputActivity : AppCompatActivity() {
         return sb.toString()
     }
 
-    /**
-     * Validates the cube string – ensures it is 54 characters long and has exactly 9 of each color.
-     */
     private fun validateCubeString(cubeString: String): Boolean {
         if (cubeString.length != 54) {
             Log.e("ColorInputActivity", "Cube string length is not 54: $cubeString")
@@ -234,9 +215,6 @@ class ColorInputActivity : AppCompatActivity() {
         return true
     }
 
-    /**
-     * Sends the generated cube string back to the calling activity.
-     */
     private fun sendCubeStringToCubeApp(cubeString: String) {
         val resultIntent = Intent().apply {
             putExtra("CUBE_STRING", cubeString)
@@ -245,9 +223,6 @@ class ColorInputActivity : AppCompatActivity() {
         finish()
     }
 
-    /**
-     * Enables the Generate button only if every cubie has been assigned a color.
-     */
     private fun checkGenerateButtonState() {
         for (face in faceOrder) {
             val cubies = cubieMap[face]
